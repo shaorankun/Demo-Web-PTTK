@@ -35,6 +35,11 @@ export default function Header({ cartCount, user, onLogout }) {
                             <NavLink to="/admin/providers" className={getLinkClass}>
                                 Providers
                             </NavLink>
+
+                            {/* [MỚI] Link vào trang quản lý Users */}
+                            <NavLink to="/admin/users" className={getLinkClass}>
+                                Users
+                            </NavLink>
                         </>
                     )}
 
@@ -53,15 +58,21 @@ export default function Header({ cartCount, user, onLogout }) {
                         {user ? (
                             // TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP
                             <>
-                                <div className="flex items-center gap-2" title={user.role}>
+                                {/* [MỚI] Bấm vào đây để vào trang Profile cá nhân */}
+                                <Link
+                                    to="/profile"
+                                    className="flex items-center gap-2 hover:bg-blue-700 p-2 rounded transition"
+                                    title="Go to Profile"
+                                >
                                     <User size={20} />
                                     <span className="font-medium capitalize hidden md:block">
-                                        {user.role}
+                                        {user.role} {/* Hoặc hiển thị user.name nếu có */}
                                     </span>
-                                </div>
+                                </Link>
+
                                 <button
                                     onClick={onLogout}
-                                    className="flex items-center gap-1 hover:text-red-200 transition"
+                                    className="flex items-center gap-1 hover:text-red-200 transition ml-2"
                                     title="Logout"
                                 >
                                     <LogOut size={20} />

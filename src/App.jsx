@@ -9,6 +9,7 @@ import Header from './components/layout/Header';
 import ShopView from './components/shop/ShopView';
 import CartView from './components/cart/CartView';
 import CheckoutForm from './components/cart/CheckoutForm';
+import UserProfile from './components/auth/UserProfile';
 
 // Import Admin Components
 import CategoryList from './admin/categories/CategoryList';
@@ -18,6 +19,7 @@ import ProviderList from './admin/providers/ProviderList.jsx';
 // File này nằm ở ./admin/equipment/EquipmentManager.jsx như bạn đã tạo
 import EquipmentManager from './admin/equipment/EquipmentManager';
 import CategoryManager from './admin/categories/CategoryManager.jsx';
+import UserManager from './admin/users/UserManager';
 
 // Import Auth Components
 import Login from './components/auth/Login';
@@ -190,6 +192,13 @@ export default function App() {
                     <Route path="/cart" element={<CartView cart={cart} onUpdateQty={updateCartQty} onRemove={removeFromCart} onCheckout={startCheckout} onContinueShopping={() => navigate('/')} />} />
                     <Route path="/checkout" element={<CheckoutForm cart={cart} onConfirm={handlePaymentSuccess} onCancel={() => navigate('/cart')} />} />
 
+                    {user ? (
+                        <Route path="/profile" element={<UserProfile user={user} />} />
+                    ) : (
+                        // Nếu chưa login mà vào /profile thì đẩy về login
+                        <Route path="/profile" element={<div className="text-center mt-10">Please Login first</div>} />
+                    )}
+
                     {user?.role === 'admin' ? (
                         <>
                             <Route path="admin/categories" element={<CategoryManager />} />
@@ -197,9 +206,12 @@ export default function App() {
                             <Route path="/admin/equipment" element={<EquipmentManager />} />
 
                             <Route path="/admin/providers" element={<ProviderManager />} />
+
+                            <Route path="/admin/users" element={<UserManager />} />
                         </>
                     ) : (
                         <Route path="/admin/*" element={<div className="text-center mt-10 text-red-500">Access Denied: Admin only</div>} />
+
                     )}
                 </Routes>
             </main>
