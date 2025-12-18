@@ -1,137 +1,261 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api'; // Ensure this path is correct
+import { Trash2, Plus, MapPin, User, Phone, Home } from 'lucide-react'; // Import icons
+import api from '../../api';
 
 export default function UserProfile() {
-    // State initialization
+    // --- STATE CHO MAIN PROFILE ---
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
         phone: '',
         address: ''
     });
-    const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' }); // For notification messages
 
-    // 1. Fetch user profile on component mount
+    // --- STATE CHO SHIPPING PROFILES ---
+    const [profiles, setProfiles] = useState([]);
+    const [newProfile, setNewProfile] = useState({
+        title: '',
+        full_name: '',
+        phone: '',
+        address: ''
+    });
+
+    // --- STATE CHUNG ---
+    const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    // 1. Fetch dữ liệu khi vào trang
     useEffect(() => {
-        fetchMyProfile();
+        Promise.all([fetchMyProfile(), fetchShippingProfiles()])
+            .finally(() => setLoading(false));
     }, []);
 
     const fetchMyProfile = async () => {
         try {
             const res = await api.get('/users/profile');
             setFormData({
-                // Mapping backend fields to state
-                // Using || '' to handle null values from database
                 full_name: res.data.full_name || '',
                 email: res.data.email || '',
                 phone: res.data.phone || '',
                 address: res.data.address || ''
             });
         } catch (error) {
-            console.error("Error loading profile:", error);
-            setMessage({ type: 'error', text: 'Failed to load user profile.' });
-        } finally {
-            setLoading(false);
+            console.error("Error loading main profile:", error);
         }
     };
 
-    // 2. Handle input changes
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // 3. Submit updates to Server
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-        setMessage({ type: '', text: '' }); // Reset message
-
+    const fetchShippingProfiles = async () => {
         try {
-            // Sends: full_name, phone, address
-            await api.put('/users/profile', formData);
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            const res = await api.get('/profiles'); // Gọi API lấy danh sách địa chỉ
+            setProfiles(res.data);
         } catch (error) {
-            console.error("Update error:", error);
-            setMessage({ type: 'error', text: 'Update failed. Please try again.' });
+            console.error("Error loading address book:", error);
         }
     };
 
-    if (loading) return <div className="text-center mt-10 text-gray-600">Loading profile...</div>;
+    // 2. Xử lý Main Profile (Giữ nguyên logic cũ)
+    const handleMainChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleUpdateMain = async (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
+        try {
+            await api.put('/users/profile', formData);
+            setMessage({ type: 'success', text: 'Account info updated successfully!' });
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Failed to update account info.' });
+        }
+    };
+
+    // 3. Xử lý Thêm Profile Mới (Address Book)
+    const handleNewProfileChange = (e) => {
+        setNewProfile({ ...newProfile, [e.target.name]: e.target.value });
+    };
+
+    const handleAddProfile = async (e) => {
+        e.preventDefault();
+        try {
+            // Gọi API POST /profiles
+            await api.post('/profiles', newProfile);
+
+            // Refresh lại danh sách & Reset form
+            await fetchShippingProfiles();
+            setNewProfile({ title: '', full_name: '', phone: '', address: '' });
+            alert("New address added successfully!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to add address.");
+        }
+    };
+
+    // 4. Xử lý Xóa Profile
+    const handleDeleteProfile = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this address?")) return;
+        try {
+            await api.delete(`/profiles/${id}`);
+            // Filter bỏ item đã xóa khỏi state (đỡ phải gọi lại API)
+            setProfiles(profiles.filter(p => p.id !== id));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete address.");
+        }
+    };
+
+    if (loading) return <div className="text-center mt-10">Loading...</div>;
 
     return (
-        <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-xl shadow-lg border border-gray-100">
-            <h2 className="text-3xl font-bold mb-8 text-gray-800 text-center">My Profile</h2>
+        <div className="max-w-4xl mx-auto mt-10 p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
 
-            {/* Notification Message */}
-            {message.text && (
-                <div className={`p-4 mb-6 rounded-lg text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {message.text}
+            {/* === CỘT TRÁI: MAIN ACCOUNT INFO === */}
+            <div className="bg-white p-6 rounded-xl shadow-lg h-fit">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Account Settings</h2>
+
+                {message.text && (
+                    <div className={`p-3 mb-4 rounded text-sm ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {message.text}
+                    </div>
+                )}
+
+                <form onSubmit={handleUpdateMain} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700">Full Name</label>
+                        <input
+                            type="text"
+                            name="full_name"
+                            value={formData.full_name}
+                            onChange={handleMainChange}
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700">Email</label>
+                        <input
+                            type="email"
+                            value={formData.email}
+                            disabled
+                            className="w-full p-2 border rounded bg-gray-100 text-gray-500 cursor-not-allowed"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700">Default Phone</label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleMainChange}
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700">Default Address</label>
+                        <textarea
+                            name="address"
+                            value={formData.address}
+                            onChange={handleMainChange}
+                            rows="2"
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                        ></textarea>
+                    </div>
+                    <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition">
+                        Update Account Info
+                    </button>
+                </form>
+            </div>
+
+            {/* === CỘT PHẢI: ADDRESS BOOK (SHIPPING PROFILES) === */}
+            <div className="space-y-6">
+
+                {/* 1. Form Thêm Địa Chỉ Mới */}
+                <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500">
+                    <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+                        <Plus className="text-green-600" /> Add New Address
+                    </h3>
+                    <form onSubmit={handleAddProfile} className="space-y-3">
+                        <input
+                            placeholder="Label (e.g. Home, Office)"
+                            name="title"
+                            value={newProfile.title}
+                            onChange={handleNewProfileChange}
+                            className="w-full p-2 border rounded text-sm focus:outline-none focus:border-green-500"
+                            required
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                placeholder="Receiver Name"
+                                name="full_name"
+                                value={newProfile.full_name}
+                                onChange={handleNewProfileChange}
+                                className="w-full p-2 border rounded text-sm focus:outline-none focus:border-green-500"
+                                required
+                            />
+                            <input
+                                placeholder="Phone Number"
+                                name="phone"
+                                value={newProfile.phone}
+                                onChange={handleNewProfileChange}
+                                className="w-full p-2 border rounded text-sm focus:outline-none focus:border-green-500"
+                                required
+                            />
+                        </div>
+                        <textarea
+                            placeholder="Detailed Address"
+                            name="address"
+                            value={newProfile.address}
+                            onChange={handleNewProfileChange}
+                            rows="2"
+                            className="w-full p-2 border rounded text-sm focus:outline-none focus:border-green-500"
+                            required
+                        ></textarea>
+                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded text-sm transition">
+                            Save Address
+                        </button>
+                    </form>
                 </div>
-            )}
 
-            <form onSubmit={handleUpdate} className="space-y-6">
-                {/* Full Name */}
+                {/* 2. Danh Sách Địa Chỉ Đã Lưu */}
                 <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Full Name</label>
-                    <input
-                        type="text"
-                        name="full_name" // MUST match backend key
-                        value={formData.full_name}
-                        onChange={handleChange}
-                        placeholder="Enter your full name"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                        required
-                    />
-                </div>
+                    <h3 className="text-xl font-bold mb-3 text-gray-700">Saved Addresses ({profiles.length})</h3>
+                    {profiles.length === 0 ? (
+                        <p className="text-gray-500 italic">No additional addresses saved.</p>
+                    ) : (
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                            {profiles.map(profile => (
+                                <div key={profile.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 relative group hover:border-blue-400 transition">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded uppercase">
+                                                {profile.title}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteProfile(profile.id)}
+                                            className="text-gray-400 hover:text-red-600 p-1"
+                                            title="Delete address"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
 
-                {/* Email (Read Only) */}
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        disabled
-                        className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Email cannot be changed.</p>
+                                    <div className="text-sm text-gray-600 space-y-1">
+                                        <p className="flex items-center gap-2 font-medium text-gray-800">
+                                            <User size={14} /> {profile.full_name}
+                                        </p>
+                                        <p className="flex items-center gap-2">
+                                            <Phone size={14} /> {profile.phone}
+                                        </p>
+                                        <p className="flex items-start gap-2">
+                                            <MapPin size={14} className="mt-1 flex-shrink-0" /> {profile.address}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-
-                {/* Phone */}
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Phone Number</label>
-                    <input
-                        type="tel"
-                        name="phone" // MUST match backend key
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="Enter phone number"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    />
-                </div>
-
-                {/* Address */}
-                <div>
-                    <label className="block text-gray-700 font-semibold mb-2">Address</label>
-                    <textarea
-                        name="address" // MUST match backend key
-                        value={formData.address}
-                        onChange={handleChange}
-                        rows="3"
-                        placeholder="Enter your address..."
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none"
-                    ></textarea>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200"
-                >
-                    Save Changes
-                </button>
-            </form>
+            </div>
         </div>
     );
 }
