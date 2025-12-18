@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import EquipmentList from './EquipmentList';
-// Import api instance (configured with VITE_API_URL)
-import api from '../../api';
+import api from '../../api'; // Đường dẫn api tùy vào cấu trúc folder của bạn
 
 export default function EquipmentManager() {
     // 1. Data State
     const [equipments, setEquipments] = useState([]);
     const [categories, setCategories] = useState([]);
     const [providers, setProviders] = useState([]);
+
+    // --- MỚI: State tìm kiếm ---
+    const [searchTerm, setSearchTerm] = useState('');
 
     // 2. UI State
     const [loading, setLoading] = useState(true);
@@ -22,15 +24,12 @@ export default function EquipmentManager() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            // Fetch all required data in parallel
             const [equipRes, catRes, provRes] = await Promise.all([
                 api.get('/equipments'),
                 api.get('/categories'),
                 api.get('/providers')
             ]);
 
-            // Format equipment data to match UI expectations
-            // (Mapping snake_case from DB to camelCase for React components if needed)
             const formattedEquip = equipRes.data.map(item => ({
                 ...item,
                 categoryId: item.category_id,
@@ -48,25 +47,18 @@ export default function EquipmentManager() {
         }
     };
 
-    // === SAVE HANDLER (Create & Update) ===
+    // === SAVE HANDLER ===
     const handleSave = async (formData) => {
         try {
-            // If ID exists -> Update (PUT)
-            // If No ID -> Create (POST)
             if (formData.id) {
-                console.log("Updating ID:", formData.id);
                 await api.put(`/equipments/${formData.id}`, formData);
                 alert('Update successful!');
             } else {
-                console.log("Creating new item...");
                 await api.post('/equipments', formData);
                 alert('Created successfully!');
             }
-
-            // Refresh list & Close form
             fetchData();
             handleCancelForm();
-
         } catch (error) {
             console.error("Save error:", error);
             const message = error.response?.data?.message || error.message;
@@ -77,7 +69,6 @@ export default function EquipmentManager() {
     // === DELETE HANDLER ===
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this equipment?")) return;
-
         try {
             await api.delete(`/equipments/${id}`);
             alert("Deleted successfully!");
@@ -89,20 +80,15 @@ export default function EquipmentManager() {
     };
 
     // UI Helpers
-    const handleShowAddForm = () => {
-        setEditItem(null);
-        setShowForm(true);
-    };
+    const handleShowAddForm = () => { setEditItem(null); setShowForm(true); };
+    const handleEdit = (item) => { setEditItem(item); setShowForm(true); };
+    const handleCancelForm = () => { setShowForm(false); setEditItem(null); };
 
-    const handleEdit = (item) => {
-        setEditItem(item);
-        setShowForm(true);
-    };
-
-    const handleCancelForm = () => {
-        setShowForm(false);
-        setEditItem(null);
-    };
+    // --- MỚI: Logic lọc danh sách theo tên hoặc mô tả ---
+    const filteredEquipments = equipments.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     if (loading) return <div className="p-10 text-center text-gray-500">Loading data...</div>;
 
@@ -111,12 +97,17 @@ export default function EquipmentManager() {
             <h1 className="text-3xl font-bold mb-6 text-gray-800">Equipment Management</h1>
 
             <EquipmentList
-                equipment={equipments}
+                // Truyền danh sách đã lọc thay vì danh sách gốc
+                equipment={filteredEquipments}
                 categories={categories}
                 providers={providers}
+
+                // Truyền props tìm kiếm
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+
                 showForm={showForm}
                 editItem={editItem}
-
                 onShowForm={handleShowAddForm}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

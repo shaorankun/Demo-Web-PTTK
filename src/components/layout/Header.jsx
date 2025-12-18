@@ -21,9 +21,24 @@ export default function Header({ cartCount, user, onLogout }) {
                         Shop
                     </NavLink>
 
+                    {/* --- USER LINKS (Chỉ hiện khi đã đăng nhập) --- */}
+                    {/* Link xem lịch sử đơn hàng của chính mình */}
+                    {user && (
+                        <NavLink to="/my-orders" className={getLinkClass}>
+                            My Orders
+                        </NavLink>
+                    )}
+
                     {/* --- ADMIN LINKS (Chỉ hiện nếu user là admin) --- */}
                     {user?.role === 'admin' && (
                         <>
+                            <div className="h-6 w-px bg-blue-400 mx-2"></div> {/* Đường kẻ ngăn cách */}
+
+                            {/* Quản lý đơn hàng toàn hệ thống */}
+                            <NavLink to="/admin/orders" className={getLinkClass}>
+                                Manage Orders
+                            </NavLink>
+
                             <NavLink to="/admin/categories" className={getLinkClass}>
                                 Categories
                             </NavLink>
@@ -36,7 +51,6 @@ export default function Header({ cartCount, user, onLogout }) {
                                 Providers
                             </NavLink>
 
-                            {/* [MỚI] Link vào trang quản lý Users */}
                             <NavLink to="/admin/users" className={getLinkClass}>
                                 Users
                             </NavLink>
@@ -44,7 +58,7 @@ export default function Header({ cartCount, user, onLogout }) {
                     )}
 
                     {/* --- CART (Luôn hiện) --- */}
-                    <Link to="/cart" className="relative p-1 hover:bg-blue-700 rounded transition">
+                    <Link to="/cart" className="relative p-1 hover:bg-blue-700 rounded transition ml-4">
                         <ShoppingCart size={24} />
                         {cartCount > 0 && (
                             <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center border-2 border-blue-600">
@@ -58,7 +72,6 @@ export default function Header({ cartCount, user, onLogout }) {
                         {user ? (
                             // TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP
                             <>
-                                {/* [MỚI] Bấm vào đây để vào trang Profile cá nhân */}
                                 <Link
                                     to="/profile"
                                     className="flex items-center gap-2 hover:bg-blue-700 p-2 rounded transition"
@@ -66,7 +79,7 @@ export default function Header({ cartCount, user, onLogout }) {
                                 >
                                     <User size={20} />
                                     <span className="font-medium capitalize hidden md:block">
-                                        {user.role} {/* Hoặc hiển thị user.name nếu có */}
+                                        {user.role}
                                     </span>
                                 </Link>
 

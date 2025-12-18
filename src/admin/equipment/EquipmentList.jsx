@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search } from 'lucide-react'; // MỚI: Import Search
 import EquipmentForm from './EquipmentForm';
 
 export default function EquipmentList({
@@ -12,18 +12,35 @@ export default function EquipmentList({
                                           onDelete,
                                           onSave,
                                           onShowForm,
-                                          onCancelForm
+                                          onCancelForm,
+                                          // MỚI: Nhận props tìm kiếm
+                                          searchTerm,
+                                          onSearchChange
                                       }) {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold">Equipment</h2>
+                <h2 className="text-3xl font-bold">Equipment List</h2>
                 <button
                     onClick={onShowForm}
                     className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" /> Add Equipment
                 </button>
+            </div>
+
+            {/* --- MỚI: THANH TÌM KIẾM --- */}
+            <div className="mb-6 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                    type="text"
+                    placeholder="Search equipment by name or description..."
+                    value={searchTerm}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="pl-10 w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
             </div>
 
             {showForm && (
@@ -49,39 +66,49 @@ export default function EquipmentList({
                     </tr>
                     </thead>
                     <tbody>
-                    {equipment.map(equip => {
-                        // FIX: Tìm category dựa trên cả 2 trường hợp tên biến (Backend trả về _id, Frontend dùng Id)
-                        const catId = equip.category_id || equip.categoryId;
-                        const provId = equip.provider_id || equip.providerId;
+                    {equipment.length > 0 ? (
+                        equipment.map(equip => {
+                            const catId = equip.category_id || equip.categoryId;
+                            const provId = equip.provider_id || equip.providerId;
 
-                        return (
-                            <tr key={equip.id} className="border-t">
-                                <td className="p-4">{equip.name}</td>
-                                <td className="p-4">${equip.price}</td>
-                                <td className="p-4">
-                                    {categories.find(c => c.id === catId)?.name || '---'}
-                                </td>
-                                <td className="p-4">
-                                    {providers.find(p => p.id === provId)?.name || '---'}
-                                </td>
-                                <td className="p-4">{equip.stock}</td>
-                                <td className="p-4 flex gap-2">
-                                    <button
-                                        onClick={() => onEdit(equip)} // Khi bấm Edit, truyền toàn bộ object equip vào
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(equip.id)}
-                                        className="text-red-600 hover:text-red-800"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
+                            return (
+                                <tr key={equip.id} className="border-t hover:bg-gray-50">
+                                    <td className="p-4 font-medium">{equip.name}</td>
+                                    <td className="p-4 text-green-600 font-bold">${equip.price}</td>
+                                    <td className="p-4">
+                                        {categories.find(c => c.id === catId)?.name || '---'}
+                                    </td>
+                                    <td className="p-4">
+                                        {providers.find(p => p.id === provId)?.name || '---'}
+                                    </td>
+                                    <td className="p-4">{equip.stock}</td>
+                                    <td className="p-4 flex gap-2">
+                                        <button
+                                            onClick={() => onEdit(equip)}
+                                            className="text-blue-600 hover:text-blue-800"
+                                            title="Edit"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(equip.id)}
+                                            className="text-red-600 hover:text-red-800"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    ) : (
+                        // MỚI: Hiển thị khi không tìm thấy kết quả
+                        <tr>
+                            <td colSpan="6" className="p-8 text-center text-gray-500">
+                                No equipment found matching "{searchTerm}"
+                            </td>
+                        </tr>
+                    )}
                     </tbody>
                 </table>
             </div>

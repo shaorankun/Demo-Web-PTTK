@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import CategoryList from './CategoryList'; // Bạn cần tạo file hiển thị danh sách này
+import CategoryList from './CategoryList';
 import api from '../../api';
 
 export default function CategoryManager() {
     // 1. Data State
     const [categories, setCategories] = useState([]);
+
+    // --- MỚI: State cho tìm kiếm ---
+    const [searchTerm, setSearchTerm] = useState('');
 
     // 2. UI State
     const [loading, setLoading] = useState(true);
@@ -19,7 +22,6 @@ export default function CategoryManager() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            // Category thường đứng độc lập nên chỉ cần fetch chính nó
             const res = await api.get('/categories');
             setCategories(res.data);
         } catch (error) {
@@ -29,19 +31,16 @@ export default function CategoryManager() {
         }
     };
 
-    // === SAVE HANDLER (Create & Update) ===
+    // === SAVE HANDLER ===
     const handleSave = async (formData) => {
         try {
             if (formData.id) {
-                // Update
                 await api.put(`/categories/${formData.id}`, formData);
                 alert('Category updated successfully!');
             } else {
-                // Create
                 await api.post('/categories', formData);
                 alert('Category created successfully!');
             }
-
             fetchData();
             handleCancelForm();
         } catch (error) {
@@ -54,7 +53,6 @@ export default function CategoryManager() {
     // === DELETE HANDLER ===
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this category?")) return;
-
         try {
             await api.delete(`/categories/${id}`);
             alert("Deleted successfully!");
@@ -81,18 +79,28 @@ export default function CategoryManager() {
         setEditItem(null);
     };
 
+    // --- MỚI: Logic lọc danh sách ---
+    const filteredCategories = categories.filter(cat =>
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
     if (loading) return <div className="p-10 text-center text-gray-500">Loading categories...</div>;
 
     return (
         <div className="container mx-auto p-6">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">Category Management</h1>
 
-            {/* Component hiển thị bảng và form nhập liệu */}
             <CategoryList
-                categories={categories}
+                // Truyền danh sách đã lọc
+                categories={filteredCategories}
+
+                // Truyền props tìm kiếm
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+
                 showForm={showForm}
                 editItem={editItem}
-
                 onShowForm={handleShowAddForm}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
