@@ -1,28 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
-import { Search } from 'lucide-react'; // 1. Import icon Search
+import { Search, AlertCircle, CheckCircle, X } from 'lucide-react'; // Import thêm icon thông báo
 
-export default function ShopView({ equipment, categories, onAddToCart }) {
-    // 2. State lưu từ khóa tìm kiếm
+// 1. THÊM PROP 'cart' ĐỂ CHECK SỐ LƯỢNG
+export default function ShopView({ equipment, categories, cart, onAddToCart }) {
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Nếu data chưa load xong thì hiện Loading
+    // 2. State cho thông báo (Toast)
+    const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
+
+    // Tự động tắt thông báo sau 3 giây
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
+    // 3. HÀM XỬ LÝ LOGIC CHECK STOCK
+    const handleAddToCartWrapper = (product) => {
+        // Tìm xem sản phẩm này đã có trong giỏ chưa
+        const existingItem = cart.find(item => item.id === product.id);
+        const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+
+        // Nếu (số lượng trong giỏ + 1) lớn hơn tồn kho thực tế -> BÁO LỖI
+        if (currentQtyInCart + 1 > product.stock) {
+            setToast({
+                type: 'error',
+                message: `Cannot add more! Only ${product.stock} items available.`
+            });
+            return; // Dừng lại, không gọi onAddToCart
+        }
+
+        // Nếu hợp lệ -> Gọi hàm gốc và BÁO THÀNH CÔNG
+        onAddToCart(product);
+        setToast({
+            type: 'success',
+            message: `Added "${product.name}" to cart successfully!`
+        });
+    };
+
     if (!equipment) {
         return <div className="text-center py-10">Loading products...</div>;
     }
 
-    // 3. Logic lọc sản phẩm
     const filteredProducts = equipment.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
-        <div>
+        <div className="relative"> {/* Thêm relative để định vị Toast */}
+
+            {/* --- PHẦN THÔNG BÁO (TOAST) --- */}
+            {toast && (
+                <div className={`fixed top-20 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded shadow-lg animate-bounce-in border-l-4 ${
+                    toast.type === 'error'
+                        ? 'bg-white border-red-500 text-red-700'
+                        : 'bg-white border-green-500 text-green-700'
+                }`}>
+                    {toast.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle size={20} />}
+                    <span className="font-medium">{toast.message}</span>
+                    <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100">
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+            {/* ------------------------------- */}
+
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-3xl font-bold">Products</h2>
-
-                {/* 4. Thanh Search Giao diện */}
                 <div className="relative w-full md:w-96">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-5 w-5 text-gray-400" />
@@ -37,7 +84,6 @@ export default function ShopView({ equipment, categories, onAddToCart }) {
                 </div>
             </div>
 
-            {/* 5. Hiển thị danh sách đã lọc */}
             {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProducts.map(item => {
@@ -48,13 +94,13 @@ export default function ShopView({ equipment, categories, onAddToCart }) {
                                 key={item.id}
                                 item={item}
                                 categoryName={catName}
-                                onAddToCart={onAddToCart}
+                                // 4. TRUYỀN HÀM WRAPPER THAY VÌ HÀM GỐC
+                                onAddToCart={handleAddToCartWrapper}
                             />
                         );
                     })}
                 </div>
             ) : (
-                // Hiển thị nếu không tìm thấy sản phẩm nào
                 <div className="text-center py-10 bg-white rounded-lg shadow-sm">
                     <p className="text-gray-500 text-lg">No products found matching "{searchTerm}"</p>
                     <button

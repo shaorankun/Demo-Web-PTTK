@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
-import { Search, Eye, X } from 'lucide-react'; // 1. Import thêm icon Eye (xem) và X (đóng)
+// 1. IMPORT THÊM ICON: Banknote, CreditCard
+import { Search, Eye, X, Banknote, CreditCard } from 'lucide-react';
 
 export default function MyOrders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // 2. State cho Modal chi tiết
-    const [selectedOrder, setSelectedOrder] = useState(null); // Lưu data đơn hàng đang xem
-    const [loadingDetails, setLoadingDetails] = useState(false); // Loading khi đang lấy chi tiết
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
 
     useEffect(() => {
         fetchMyOrders();
@@ -26,13 +26,11 @@ export default function MyOrders() {
         }
     };
 
-    // 3. Hàm xử lý khi bấm "View Details"
     const handleViewDetails = async (orderId) => {
         setLoadingDetails(true);
         try {
-            // Gọi API getOrderDetails (Controller số 6)
             const res = await api.get(`/orders/${orderId}`);
-            setSelectedOrder(res.data); // Lưu dữ liệu vào state để hiển thị Modal
+            setSelectedOrder(res.data);
         } catch (error) {
             alert("Failed to load order details");
             console.error(error);
@@ -41,7 +39,6 @@ export default function MyOrders() {
         }
     };
 
-    // 4. Hàm đóng Modal
     const closeModal = () => {
         setSelectedOrder(null);
     };
@@ -101,15 +98,32 @@ export default function MyOrders() {
                                     {order.status}
                                 </span>
                             </div>
+
                             <div className="flex justify-between items-center border-t pt-4">
-                                <div>
-                                    <p className="text-sm text-gray-600 truncate max-w-xs">Ship to: {order.address}</p>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-gray-600 truncate max-w-xs">
+                                        <span className="font-medium text-gray-800">Ship to:</span> {order.address}
+                                    </p>
+
+                                    {/* 2. HIỂN THỊ PAYMENT METHOD Ở LIST VIEW */}
+                                    <p className="text-sm flex items-center gap-2">
+                                        <span className="font-medium text-gray-800">Payment:</span>
+                                        {order.payment_method === 'BANK' ? (
+                                            <span className="text-blue-600 flex items-center gap-1 font-semibold">
+                                                <CreditCard size={14} /> Bank Transfer
+                                            </span>
+                                        ) : (
+                                            <span className="text-green-600 flex items-center gap-1 font-semibold">
+                                                <Banknote size={14} /> COD
+                                            </span>
+                                        )}
+                                    </p>
                                 </div>
+
                                 <div className="flex items-center gap-4">
                                     <div className="text-xl font-bold text-blue-600">
                                         ${order.total_money}
                                     </div>
-                                    {/* Nút bấm xem chi tiết */}
                                     <button
                                         onClick={() => handleViewDetails(order.id)}
                                         className="flex items-center gap-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded transition"
@@ -124,7 +138,7 @@ export default function MyOrders() {
                 </div>
             )}
 
-            {/* 5. MODAL CHI TIẾT (Chỉ hiển thị khi selectedOrder có dữ liệu) */}
+            {/* MODAL CHI TIẾT */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fadeIn">
@@ -148,13 +162,30 @@ export default function MyOrders() {
                                     <p className="text-gray-500">Phone</p>
                                     <p className="font-semibold">{selectedOrder.phone}</p>
                                 </div>
-                                <div className="col-span-2">
+
+                                {/* 3. HIỂN THỊ PAYMENT METHOD TRONG MODAL */}
+                                <div>
+                                    <p className="text-gray-500">Payment Method</p>
+                                    <p className="font-semibold flex items-center gap-2 mt-1">
+                                        {selectedOrder.payment_method === 'BANK' ? (
+                                            <span className="ml-21 text-blue-700 bg-blue-100 px-2 py-1 rounded flex items-center gap-1 w-fit">
+                                                <CreditCard size={14} /> Bank Transfer
+                                            </span>
+                                        ) : (
+                                            <span className="ml-18 text-green-700 bg-green-100 px-2 py-1 rounded flex items-center gap-1 w-fit">
+                                                <Banknote size={14} /> Cash on Delivery
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div>
                                     <p className="text-gray-500">Address</p>
                                     <p className="font-semibold">{selectedOrder.address}</p>
                                 </div>
                             </div>
 
-                            {/* Danh sách sản phẩm (Table) */}
+                            {/* Danh sách sản phẩm */}
                             <div>
                                 <h4 className="font-bold mb-3 text-gray-700">Items Ordered</h4>
                                 <div className="border rounded-lg overflow-hidden">
@@ -168,7 +199,6 @@ export default function MyOrders() {
                                         </tr>
                                         </thead>
                                         <tbody className="divide-y">
-                                        {/* Backend trả về items trong object */}
                                         {selectedOrder.items && selectedOrder.items.map((item, index) => (
                                             <tr key={index}>
                                                 <td className="p-3 font-medium">{item.product_name}</td>
@@ -206,7 +236,6 @@ export default function MyOrders() {
                 </div>
             )}
 
-            {/* Loading Overlay khi đang fetch chi tiết */}
             {loadingDetails && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
