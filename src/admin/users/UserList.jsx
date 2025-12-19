@@ -1,11 +1,12 @@
 import React from 'react';
-import { Trash2, Search } from 'lucide-react';
+import { Trash2, Search, Eye } from 'lucide-react'; // MỚI: Import Eye
 
 export default function UserList({
                                      users,
                                      searchTerm,
                                      onSearchChange,
-                                     onDelete
+                                     onDelete,
+                                     onView // MỚI: Nhận prop xem chi tiết
                                  }) {
     return (
         <div>
@@ -32,7 +33,6 @@ export default function UserList({
                     <thead className="bg-gray-100">
                     <tr>
                         <th className="p-4 text-left">ID</th>
-                        {/* 1. Sửa header */}
                         <th className="p-4 text-left">Full Name</th>
                         <th className="p-4 text-left">Email</th>
                         <th className="p-4 text-left">Role</th>
@@ -44,7 +44,6 @@ export default function UserList({
                         users.map(u => (
                             <tr key={u.id} className="border-t hover:bg-gray-50">
                                 <td className="p-4 text-gray-500">#{u.id}</td>
-                                {/* 2. Sửa data binding thành full_name */}
                                 <td className="p-4 font-medium">{u.full_name}</td>
                                 <td className="p-4">{u.email}</td>
                                 <td className="p-4">
@@ -54,7 +53,16 @@ export default function UserList({
                                             {u.role ? u.role.toUpperCase() : 'USER'}
                                         </span>
                                 </td>
-                                <td className="p-4">
+                                <td className="p-4 flex gap-2">
+                                    {/* MỚI: Nút xem chi tiết */}
+                                    <button
+                                        onClick={() => onView(u)}
+                                        className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                        title="View Details"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                    </button>
+
                                     <button
                                         onClick={() => onDelete(u.id)}
                                         className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded"

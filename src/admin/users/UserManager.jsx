@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import UserList from './UserList';
+import UserDetailModal from './UserDetailModal'; // MỚI: Import Modal
 import api from '../../api';
 
 export default function UserManager() {
@@ -8,6 +9,9 @@ export default function UserManager() {
 
     // State cho thanh tìm kiếm
     const [searchTerm, setSearchTerm] = useState('');
+
+    // MỚI: State cho modal chi tiết
+    const [selectedUser, setSelectedUser] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -31,6 +35,10 @@ export default function UserManager() {
         try {
             await api.delete(`/users/${id}`);
             alert("User deleted successfully!");
+            // Nếu user đang mở modal bị xóa thì đóng modal
+            if (selectedUser && selectedUser.id === id) {
+                setSelectedUser(null);
+            }
             fetchData();
         } catch (error) {
             console.error("Delete error:", error);
@@ -38,8 +46,16 @@ export default function UserManager() {
         }
     };
 
+    // === VIEW DETAIL ===
+    const handleViewDetail = (user) => {
+        setSelectedUser(user);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedUser(null);
+    };
+
     // === SEARCH LOGIC ===
-    // Lọc user dựa trên tên hoặc email (không phân biệt hoa thường)
     const filteredUsers = users.filter(user =>
         (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -48,13 +64,22 @@ export default function UserManager() {
     if (loading) return <div className="p-10 text-center">Loading users...</div>;
 
     return (
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6 relative">
             <UserList
-                users={filteredUsers} // Truyền danh sách đã lọc
+                users={filteredUsers}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 onDelete={handleDelete}
+                onView={handleViewDetail} // MỚI: Truyền hàm view xuống
             />
+
+            {/* MỚI: Render Modal nếu có selectedUser */}
+            {selectedUser && (
+                <UserDetailModal
+                    user={selectedUser}
+                    onClose={handleCloseModal}
+                />
+            )}
         </div>
     );
 }
