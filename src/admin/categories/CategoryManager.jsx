@@ -31,8 +31,22 @@ export default function CategoryManager() {
         }
     };
 
-    // === SAVE HANDLER ===
+// === SAVE HANDLER ===
     const handleSave = async (formData) => {
+        // 1. KIỂM TRA TRÙNG TÊN (Logic mới thêm vào)
+        const isDuplicate = categories.some(cat =>
+            // So sánh tên (bỏ khoảng trắng thừa + không phân biệt hoa thường)
+            cat.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
+            // Nếu đang sửa (có id), đảm bảo không so sánh với chính nó
+            cat.id !== formData.id
+        );
+
+        if (isDuplicate) {
+            alert("Category name existed! Please choose another name");
+            return; // Dừng hàm ngay lập tức, không gọi API
+        }
+
+        // 2. GỌI API (Logic cũ của bạn)
         try {
             if (formData.id) {
                 await api.put(`/categories/${formData.id}`, formData);

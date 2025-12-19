@@ -18,18 +18,19 @@ export default function OrderManager() {
             setOrders(res.data);
             setLoading(false);
         } catch (error) {
-            console.error("Lỗi tải đơn hàng", error);
+            console.error("Error loading orders", error);
             setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Xóa đơn hàng này?")) return;
+        if (!window.confirm("Delete this order?")) return;
         try {
             await api.delete(`/orders/${id}`);
             setOrders(orders.filter(o => o.id !== id));
+            alert("Delete order successfully");
         } catch (error) {
-            alert("Lỗi khi xóa");
+            alert("Error while deleting");
         }
     };
 

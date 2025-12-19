@@ -47,8 +47,22 @@ export default function EquipmentManager() {
         }
     };
 
-    // === SAVE HANDLER ===
+    // === SAVE HANDLER (Đã thêm check trùng tên) ===
     const handleSave = async (formData) => {
+        // 1. KIỂM TRA TRÙNG TÊN
+        const isDuplicate = equipments.some(item =>
+            // So sánh tên (bỏ khoảng trắng + chữ thường)
+            item.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
+            // Nếu đang update thì bỏ qua chính nó
+            item.id !== formData.id
+        );
+
+        if (isDuplicate) {
+            alert("Equipment existed! Please choose another name");
+            return; // Dừng, không gọi API
+        }
+
+        // 2. GỌI API (Logic cũ)
         try {
             if (formData.id) {
                 await api.put(`/equipments/${formData.id}`, formData);
@@ -61,6 +75,7 @@ export default function EquipmentManager() {
             handleCancelForm();
         } catch (error) {
             console.error("Save error:", error);
+            // Nếu Backend trả về lỗi trùng, hiển thị ra luôn
             const message = error.response?.data?.message || error.message;
             alert(`Operation failed: ${message}`);
         }
