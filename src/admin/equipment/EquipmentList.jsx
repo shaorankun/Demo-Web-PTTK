@@ -20,12 +20,12 @@ export default function EquipmentList({
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold">Equipment List</h2>
+                <h2 className="text-3xl font-bold">Product List</h2>
                 <button
                     onClick={onShowForm}
                     className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
                 >
-                    <Plus className="w-4 h-4" /> Add Equipment
+                    <Plus className="w-4 h-4" /> Add Product
                 </button>
             </div>
 
@@ -105,7 +105,7 @@ export default function EquipmentList({
                         // MỚI: Hiển thị khi không tìm thấy kết quả
                         <tr>
                             <td colSpan="6" className="p-8 text-center text-gray-500">
-                                No equipment found matching "{searchTerm}"
+                                No product found matching "{searchTerm}"
                             </td>
                         </tr>
                     )}

@@ -44,7 +44,7 @@ export default function Header({ cartCount, user, onLogout }) {
                             </NavLink>
 
                             <NavLink to="/admin/equipment" className={getLinkClass}>
-                                Equipment
+                                Product
                             </NavLink>
 
                             <NavLink to="/admin/providers" className={getLinkClass}>

@@ -46,7 +46,7 @@ export default function EquipmentForm({ equipment, categories, providers, onSave
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h3 className="text-xl font-bold mb-4">{equipment ? 'Edit' : 'Add'} Equipment</h3>
+            <h3 className="text-xl font-bold mb-4">{equipment ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-4">
                 {/* Các ô input giữ nguyên, chỉ sửa logic state ở trên */}
                 <div>

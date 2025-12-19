@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, MapPin, User, Phone, AlertTriangle } from 'lucide-react';
-import api from '../../api'; // Đảm bảo axios instance đã config baseURL là domain/api
+import api from '../../api';
 
 export default function UserProfile() {
     // --- STATE CHO MAIN PROFILE ---
@@ -32,7 +32,6 @@ export default function UserProfile() {
     // 1. GET /api/users/profile
     const fetchMyProfile = async () => {
         try {
-            // Gọi đúng route GET trong userRoutes
             const res = await api.get('/users/profile');
             setFormData({
                 full_name: res.data.full_name || '',
@@ -45,7 +44,7 @@ export default function UserProfile() {
         }
     };
 
-    // 2. GET /api/profiles (Giả định bạn có file profileRoutes.js riêng như trong index.js)
+    // 2. GET /api/profiles
     const fetchShippingProfiles = async () => {
         try {
             const res = await api.get('/profiles');
@@ -56,15 +55,25 @@ export default function UserProfile() {
     };
 
     // 3. PUT /api/users/profile
+    // --- ĐÃ SỬA: Thêm logic chặn nhập chữ vào Phone ---
     const handleMainChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        if (name === 'phone') {
+            // Kiểm tra: Nếu không rỗng VÀ không phải là số
+            if (value !== '' && !/^\d+$/.test(value)) {
+                alert('Invalid format! Phone number must contain only digits (0-9).');
+                return; // Chặn không cho cập nhật state
+            }
+        }
+
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleUpdateMain = async (e) => {
         e.preventDefault();
         setMessage({ type: '', text: '' });
         try {
-            // Gọi đúng route PUT trong userRoutes
             await api.put('/users/profile', formData);
             setMessage({ type: 'success', text: 'Account info updated successfully!' });
         } catch (error) {
@@ -72,7 +81,7 @@ export default function UserProfile() {
         }
     };
 
-    // 4. DELETE /api/users/profile (Chức năng xóa tài khoản)
+    // 4. DELETE /api/users/profile
     const handleDeleteAccount = async () => {
         const confirmDelete = window.confirm(
             "WARNING: Are you sure you want to delete your account?\n\nThis action cannot be undone. All your data will be permanently removed."
@@ -80,10 +89,7 @@ export default function UserProfile() {
 
         if (confirmDelete) {
             try {
-                // Gọi vào route bạn VỪA THÊM ở Bước 1
                 await api.delete('/users/profile');
-
-                // Xử lý đăng xuất sau khi xóa
                 localStorage.removeItem('token');
                 alert("Your account has been deleted.");
                 window.location.href = '/login';
@@ -94,9 +100,21 @@ export default function UserProfile() {
         }
     };
 
-    // --- CÁC HÀM XỬ LÝ ĐỊA CHỈ PHỤ (GIỮ NGUYÊN) ---
+    // --- CÁC HÀM XỬ LÝ ĐỊA CHỈ PHỤ ---
+
+    // --- ĐÃ SỬA: Thêm logic chặn nhập chữ vào Phone ---
     const handleNewProfileChange = (e) => {
-        setNewProfile({ ...newProfile, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        if (name === 'phone') {
+            // Kiểm tra tương tự như trên
+            if (value !== '' && !/^\d+$/.test(value)) {
+                alert('Invalid format! Phone number must contain only digits (0-9).');
+                return;
+            }
+        }
+
+        setNewProfile({ ...newProfile, [name]: value });
     };
 
     const handleAddProfile = async (e) => {
@@ -148,7 +166,15 @@ export default function UserProfile() {
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700">Phone</label>
-                            <input type="tel" name="phone" value={formData.phone} onChange={handleMainChange} className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" />
+                            {/* Input Phone cho Main Profile */}
+                            <input
+                                type="text"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleMainChange}
+                                placeholder="Enter numbers only"
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700">Address</label>
@@ -176,7 +202,15 @@ export default function UserProfile() {
                         <input placeholder="Label (Home, Office)" name="title" value={newProfile.title} onChange={handleNewProfileChange} className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required />
                         <div className="grid grid-cols-2 gap-2">
                             <input placeholder="Name" name="full_name" value={newProfile.full_name} onChange={handleNewProfileChange} className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required />
-                            <input placeholder="Phone" name="phone" value={newProfile.phone} onChange={handleNewProfileChange} className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required />
+                            {/* Input Phone cho Address Book */}
+                            <input
+                                placeholder="Phone (Numbers only)"
+                                name="phone"
+                                value={newProfile.phone}
+                                onChange={handleNewProfileChange}
+                                className="w-full p-2 border rounded text-sm outline-none focus:border-green-500"
+                                required
+                            />
                         </div>
                         <textarea placeholder="Address" name="address" value={newProfile.address} onChange={handleNewProfileChange} rows="2" className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required></textarea>
                         <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded text-sm transition">Save Address</button>

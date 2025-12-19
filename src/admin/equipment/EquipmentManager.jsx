@@ -58,7 +58,7 @@ export default function EquipmentManager() {
         );
 
         if (isDuplicate) {
-            alert("Equipment existed! Please choose another name");
+            alert("Product existed! Please choose another name");
             return; // Dừng, không gọi API
         }
 
@@ -83,7 +83,7 @@ export default function EquipmentManager() {
 
     // === DELETE HANDLER ===
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this equipment?")) return;
+        if (!window.confirm("Are you sure you want to delete this product?")) return;
         try {
             await api.delete(`/equipments/${id}`);
             alert("Deleted successfully!");
@@ -109,7 +109,7 @@ export default function EquipmentManager() {
 
     return (
         <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">Equipment Management</h1>
+            <h1 className="text-3xl font-bold mb-6 text-gray-800">Product Management</h1>
 
             <EquipmentList
                 // Truyền danh sách đã lọc thay vì danh sách gốc
