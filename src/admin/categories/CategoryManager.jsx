@@ -92,8 +92,10 @@ export default function CategoryManager() {
     if (loading) return <div className="p-10 text-center text-gray-500">Loading categories...</div>;
 
     return (
-        <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">Category Management</h1>
+        <div className="w-full min-h-screen p-6 bg-gray-50">
+            <h1 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-4">
+                Category Management
+            </h1>
 
             <CategoryList
                 // Truyền trực tiếp categories (vì API đã trả về kết quả lọc rồi)
