@@ -93,9 +93,7 @@ export default function CategoryManager() {
 
     return (
         <div className="w-full min-h-screen p-6 bg-gray-50">
-            <h1 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-4">
-                Category Management
-            </h1>
+
 
             <CategoryList
                 // Truyền trực tiếp categories (vì API đã trả về kết quả lọc rồi)

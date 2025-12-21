@@ -1,37 +1,48 @@
-#root {
-  max-width: 1920px;
-  margin: 0 auto;
-  text-align: center;
+/* 1. RESET CƠ BẢN CHO BODY */
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f9fafb; /* Màu nền xám nhẹ mặc định cho toàn web */
+    overflow-x: hidden; /* Chặn thanh cuộn ngang thừa */
 }
 
+/* 2. CẤU HÌNH ROOT FULL MÀN HÌNH */
+#root {
+    width: 100%;
+    min-height: 100vh; /* Chiếm tối thiểu 100% chiều cao màn hình */
+    margin: 0;
+    padding: 0;
+    text-align: left; /* Quan trọng: Trả về căn trái, đừng để center */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 3. CÁC CLASS TIỆN ÍCH (Giữ lại nếu bạn muốn dùng) */
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+    filter: drop-shadow(0 0 2em #646cffaa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+    filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+    a:nth-of-type(2) .logo {
+        animation: logo-spin infinite 20s linear;
+    }
 }
-
 .card {
   padding: 2em;
 }

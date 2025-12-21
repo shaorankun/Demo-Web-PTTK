@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, Plus, MapPin, User, Phone, AlertTriangle } from 'lucide-react';
+import {
+    Trash2, Plus, MapPin, User, Phone, AlertTriangle,
+    Mail, Save, Shield, Camera, Home, Briefcase
+} from 'lucide-react';
 import api from '../../api';
 
 export default function UserProfile() {
-    // --- STATE CHO MAIN PROFILE ---
+    // --- STATE GIỮ NGUYÊN ---
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
@@ -11,7 +14,6 @@ export default function UserProfile() {
         address: ''
     });
 
-    // --- STATE CHO SHIPPING PROFILES ---
     const [profiles, setProfiles] = useState([]);
     const [newProfile, setNewProfile] = useState({
         title: '',
@@ -20,7 +22,6 @@ export default function UserProfile() {
         address: ''
     });
 
-    // --- STATE CHUNG ---
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -29,7 +30,7 @@ export default function UserProfile() {
             .finally(() => setLoading(false));
     }, []);
 
-    // 1. GET /api/users/profile
+    // --- LOGIC API GIỮ NGUYÊN ---
     const fetchMyProfile = async () => {
         try {
             const res = await api.get('/users/profile');
@@ -44,7 +45,6 @@ export default function UserProfile() {
         }
     };
 
-    // 2. GET /api/profiles
     const fetchShippingProfiles = async () => {
         try {
             const res = await api.get('/profiles');
@@ -54,19 +54,15 @@ export default function UserProfile() {
         }
     };
 
-    // 3. PUT /api/users/profile
-    // --- ĐÃ SỬA: Thêm logic chặn nhập chữ vào Phone ---
+    // --- LOGIC HANDLE CHANGE (CÓ CHECK SỐ ĐIỆN THOẠI) ---
     const handleMainChange = (e) => {
         const { name, value } = e.target;
-
         if (name === 'phone') {
-            // Kiểm tra: Nếu không rỗng VÀ không phải là số
             if (value !== '' && !/^\d+$/.test(value)) {
                 alert('Invalid format! Phone number must contain only digits (0-9).');
-                return; // Chặn không cho cập nhật state
+                return;
             }
         }
-
         setFormData({ ...formData, [name]: value });
     };
 
@@ -81,12 +77,10 @@ export default function UserProfile() {
         }
     };
 
-    // 4. DELETE /api/users/profile
     const handleDeleteAccount = async () => {
         const confirmDelete = window.confirm(
-            "WARNING: Are you sure you want to delete your account?\n\nThis action cannot be undone. All your data will be permanently removed."
+            "WARNING: Are you sure you want to delete your account?\n\nThis action cannot be undone."
         );
-
         if (confirmDelete) {
             try {
                 await api.delete('/users/profile');
@@ -94,26 +88,19 @@ export default function UserProfile() {
                 alert("Your account has been deleted.");
                 window.location.href = '/login';
             } catch (error) {
-                console.error(error);
-                alert("Failed to delete account. Please try again.");
+                alert("Failed to delete account.");
             }
         }
     };
 
-    // --- CÁC HÀM XỬ LÝ ĐỊA CHỈ PHỤ ---
-
-    // --- ĐÃ SỬA: Thêm logic chặn nhập chữ vào Phone ---
     const handleNewProfileChange = (e) => {
         const { name, value } = e.target;
-
         if (name === 'phone') {
-            // Kiểm tra tương tự như trên
             if (value !== '' && !/^\d+$/.test(value)) {
                 alert('Invalid format! Phone number must contain only digits (0-9).');
                 return;
             }
         }
-
         setNewProfile({ ...newProfile, [name]: value });
     };
 
@@ -125,7 +112,6 @@ export default function UserProfile() {
             setNewProfile({ title: '', full_name: '', phone: '', address: '' });
             alert("New address added successfully!");
         } catch (error) {
-            console.error(error);
             alert("Failed to add address.");
         }
     };
@@ -136,103 +122,262 @@ export default function UserProfile() {
             await api.delete(`/profiles/${id}`);
             setProfiles(profiles.filter(p => p.id !== id));
         } catch (error) {
-            console.error(error);
             alert("Failed to delete address.");
         }
     };
 
-    if (loading) return <div className="text-center mt-10">Loading...</div>;
+    if (loading) return (
+        <div className="flex justify-center items-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    );
 
     return (
-        <div className="max-w-4xl mx-auto mt-10 p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* CỘT TRÁI */}
-            <div className="space-y-8">
-                {/* Form Main Info */}
-                <div className="bg-white p-6 rounded-xl shadow-lg">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Account Settings</h2>
-                    {message.text && (
-                        <div className={`p-3 mb-4 rounded text-sm ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {message.text}
-                        </div>
-                    )}
-                    <form onSubmit={handleUpdateMain} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700">Full Name</label>
-                            <input type="text" name="full_name" value={formData.full_name} onChange={handleMainChange} className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" required />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700">Email</label>
-                            <input type="email" value={formData.email} disabled className="w-full p-2 border rounded bg-gray-100 text-gray-500 cursor-not-allowed" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700">Phone</label>
-                            {/* Input Phone cho Main Profile */}
-                            <input
-                                type="text"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleMainChange}
-                                placeholder="Enter numbers only"
-                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700">Address</label>
-                            <textarea name="address" value={formData.address} onChange={handleMainChange} rows="2" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                        </div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition">Update Info</button>
-                    </form>
-                </div>
+        <div className="min-h-screen bg-gray-50 py-10 px-4 animate-fade-in">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                {/* DANGER ZONE */}
-                <div className="bg-red-50 p-6 rounded-xl border border-red-200">
-                    <h3 className="text-red-700 font-bold flex items-center gap-2 mb-2"><AlertTriangle size={20} /> Danger Zone</h3>
-                    <p className="text-sm text-red-600 mb-4">Once you delete your account, there is no going back.</p>
-                    <button onClick={handleDeleteAccount} className="w-full border border-red-500 text-red-600 hover:bg-red-600 hover:text-white font-bold py-2 rounded transition">
-                        Delete My Account
-                    </button>
-                </div>
-            </div>
+                {/* --- CỘT TRÁI: PROFILE CARD (Chiếm 4/12 cột) --- */}
+                <div className="lg:col-span-4 space-y-6">
 
-            {/* CỘT PHẢI (Address Book) */}
-            <div className="space-y-6">
-                <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><Plus className="text-green-600" /> Add Address</h3>
-                    <form onSubmit={handleAddProfile} className="space-y-3">
-                        <input placeholder="Label (Home, Office)" name="title" value={newProfile.title} onChange={handleNewProfileChange} className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required />
-                        <div className="grid grid-cols-2 gap-2">
-                            <input placeholder="Name" name="full_name" value={newProfile.full_name} onChange={handleNewProfileChange} className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required />
-                            {/* Input Phone cho Address Book */}
-                            <input
-                                placeholder="Phone (Numbers only)"
-                                name="phone"
-                                value={newProfile.phone}
-                                onChange={handleNewProfileChange}
-                                className="w-full p-2 border rounded text-sm outline-none focus:border-green-500"
-                                required
-                            />
-                        </div>
-                        <textarea placeholder="Address" name="address" value={newProfile.address} onChange={handleNewProfileChange} rows="2" className="w-full p-2 border rounded text-sm outline-none focus:border-green-500" required></textarea>
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded text-sm transition">Save Address</button>
-                    </form>
-                </div>
+                    {/* CARD THÔNG TIN CHÍNH */}
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
+                        {/* Header Background */}
+                        <div className="h-32 bg-gradient-to-r from-blue-600 to-blue-400"></div>
 
-                <div>
-                    <h3 className="text-xl font-bold mb-3 text-gray-700">Saved Addresses ({profiles.length})</h3>
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                        {profiles.map(profile => (
-                            <div key={profile.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 relative group hover:border-blue-400 transition">
-                                <div className="flex justify-between items-start">
-                                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded uppercase">{profile.title}</span>
-                                    <button onClick={() => handleDeleteProfile(profile.id)} className="text-gray-400 hover:text-red-600 p-1"><Trash2 size={18} /></button>
-                                </div>
-                                <div className="text-sm text-gray-600 space-y-1 mt-2">
-                                    <p className="flex items-center gap-2 font-medium text-gray-800"><User size={14} /> {profile.full_name}</p>
-                                    <p className="flex items-center gap-2"><Phone size={14} /> {profile.phone}</p>
-                                    <p className="flex items-start gap-2"><MapPin size={14} className="mt-1 flex-shrink-0" /> {profile.address}</p>
+                        {/* Avatar (Giả lập) */}
+                        <div className="absolute top-20 left-1/2 transform -translate-x-1/2">
+                            <div className="w-24 h-24 bg-white rounded-full p-1 shadow-lg">
+                                <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-400 relative overflow-hidden group">
+                                    <User size={40} />
+                                    {/* Hover effect upload ảnh (UI only) */}
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                                        <Camera size={20} className="text-white" />
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+
+                        <div className="pt-16 pb-6 px-6">
+                            <h2 className="text-center text-2xl font-bold text-gray-800">{formData.full_name || 'User Name'}</h2>
+                            <p className="text-center text-blue-600 text-sm font-medium mb-6">{formData.email}</p>
+
+                            {/* Thông báo cập nhật */}
+                            {message.text && (
+                                <div className={`p-3 mb-6 rounded-lg text-sm flex items-center gap-2 ${
+                                    message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                    {message.type === 'success' ? <Shield size={16}/> : <AlertTriangle size={16}/>}
+                                    {message.text}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleUpdateMain} className="space-y-5">
+                                {/* Input Group: Full Name */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Full Name</label>
+                                    <div className="relative mt-1">
+                                        <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                                        <input
+                                            type="text"
+                                            name="full_name"
+                                            value={formData.full_name}
+                                            onChange={handleMainChange}
+                                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Input Group: Email (Disabled) */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Email</label>
+                                    <div className="relative mt-1">
+                                        <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            disabled
+                                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-xl cursor-not-allowed"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Input Group: Phone */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Phone Number</label>
+                                    <div className="relative mt-1">
+                                        <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
+                                        <input
+                                            type="text"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleMainChange}
+                                            placeholder="0901234567"
+                                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Input Group: Address */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Main Address</label>
+                                    <div className="relative mt-1">
+                                        <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
+                                        <textarea
+                                            name="address"
+                                            value={formData.address}
+                                            onChange={handleMainChange}
+                                            rows="2"
+                                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none"
+                                        ></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <Save size={18} /> Update Profile
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* DANGER ZONE */}
+                    <div className="bg-red-50 p-6 rounded-2xl border border-red-200 hover:shadow-md transition">
+                        <h3 className="text-red-800 font-bold flex items-center gap-2 mb-2">
+                            <AlertTriangle size={20} /> Danger Zone
+                        </h3>
+                        <p className="text-sm text-red-600 mb-4 opacity-80">
+                            Deletion is irreversible. All data will be lost.
+                        </p>
+                        <button
+                            onClick={handleDeleteAccount}
+                            className="w-full border border-red-300 bg-white text-red-600 hover:bg-red-600 hover:text-white font-bold py-2.5 rounded-xl transition-colors text-sm"
+                        >
+                            Delete My Account
+                        </button>
+                    </div>
+                </div>
+
+                {/* --- CỘT PHẢI: ADDRESS BOOK (Chiếm 8/12 cột) --- */}
+                <div className="lg:col-span-8 space-y-8">
+
+                    {/* FORM THÊM ĐỊA CHỈ MỚI */}
+                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
+                        <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                            <span className="bg-green-100 text-green-600 p-2 rounded-lg">
+                                <Plus size={20} />
+                            </span>
+                            Add New Address
+                        </h3>
+
+                        <form onSubmit={handleAddProfile} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="relative">
+                                    <input
+                                        name="title"
+                                        value={newProfile.title}
+                                        onChange={handleNewProfileChange}
+                                        placeholder="Label (e.g. Home, Office)"
+                                        className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 outline-none transition-all"
+                                        required
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                                    <input
+                                        name="full_name"
+                                        value={newProfile.full_name}
+                                        onChange={handleNewProfileChange}
+                                        placeholder="Contact Name"
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 outline-none transition-all"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                                <input
+                                    name="phone"
+                                    value={newProfile.phone}
+                                    onChange={handleNewProfileChange}
+                                    placeholder="Phone Number (Digits only)"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                                <textarea
+                                    name="address"
+                                    value={newProfile.address}
+                                    onChange={handleNewProfileChange}
+                                    placeholder="Full Address Detail"
+                                    rows="2"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 outline-none transition-all resize-none"
+                                    required
+                                ></textarea>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-green-500/30 transition-all flex items-center gap-2">
+                                    <Save size={18} /> Save Address
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* DANH SÁCH ĐỊA CHỈ (GRID) */}
+                    <div>
+                        <h3 className="text-xl font-bold mb-4 text-gray-700 flex items-center gap-2">
+                            <MapPin className="text-blue-500" /> Saved Addresses ({profiles.length})
+                        </h3>
+
+                        {profiles.length === 0 ? (
+                            <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-300 text-gray-400">
+                                You haven't saved any addresses yet.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {profiles.map(profile => (
+                                    <div key={profile.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all group relative">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
+                                                profile.title.toLowerCase() === 'home' ? 'bg-blue-100 text-blue-700' :
+                                                    profile.title.toLowerCase() === 'office' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {profile.title.toLowerCase() === 'home' ? <Home size={12}/> :
+                                                    profile.title.toLowerCase() === 'office' ? <Briefcase size={12}/> : <MapPin size={12}/>}
+                                                {profile.title}
+                                            </span>
+
+                                            <button
+                                                onClick={() => handleDeleteProfile(profile.id)}
+                                                className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all"
+                                                title="Delete Address"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2 text-sm text-gray-600">
+                                            <p className="flex items-center gap-2 font-bold text-gray-800 text-base">
+                                                {profile.full_name}
+                                            </p>
+                                            <p className="flex items-center gap-2">
+                                                <Phone size={14} className="text-gray-400" /> {profile.phone}
+                                            </p>
+                                            <p className="flex items-start gap-2 leading-relaxed">
+                                                <MapPin size={14} className="mt-1 text-gray-400 flex-shrink-0" />
+                                                {profile.address}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

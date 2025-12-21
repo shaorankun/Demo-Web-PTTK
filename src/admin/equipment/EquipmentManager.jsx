@@ -115,7 +115,6 @@ export default function EquipmentManager() {
 
     return (
         <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">Product Management</h1>
 
             <EquipmentList
                 // Truyền trực tiếp equipments (vì API đã lọc rồi)

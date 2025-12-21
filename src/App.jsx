@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import {Routes, Route, useNavigate, Navigate, useLocation} from 'react-router-dom';
 
 // Import API
 import api from './api';
@@ -30,21 +30,21 @@ import './App.css';
 
 export default function App() {
     const navigate = useNavigate();
+    const location = useLocation(); // Hook lấy đường dẫn hiện tại
 
     // --- STATE ---
     const [categories, setCategories] = useState([]);
     const [providers, setProviders] = useState([]);
     const [equipment, setEquipment] = useState([]);
 
+    // 1. THÊM STATE LOADING (Mặc định là true để hiện loading ngay khi vào)
+    const [loading, setLoading] = useState(true);
+
     const [cart, setCart] = useState([]);
     const [orders, setOrders] = useState([]);
 
     // AUTH STATE
     const [user, setUser] = useState(null);
-
-    // State cho Admin Form
-    const [editItem, setEditItem] = useState(null);
-    const [showForm, setShowForm] = useState(false);
 
     // --- EFFECT 1: Kiểm tra đăng nhập ---
     useEffect(() => {
@@ -56,11 +56,14 @@ export default function App() {
     }, []);
 
     // --- EFFECT 2: Lấy dữ liệu từ Database ---
+    // (Lưu ý: ShopView mới cũng sẽ tự gọi lại hàm này khi mount để đảm bảo data mới nhất)
     useEffect(() => {
         fetchData();
     }, []);
 
+    // 2. CẬP NHẬT FETCH DATA (Xử lý Loading)
     const fetchData = async () => {
+        setLoading(true); // Bắt đầu tải
         try {
             const [catRes, provRes, equipRes] = await Promise.all([
                 api.get('/categories'),
@@ -81,6 +84,8 @@ export default function App() {
             setEquipment(formattedEquip);
         } catch (error) {
             console.error("Lỗi khi lấy dữ liệu:", error);
+        } finally {
+            setLoading(false); // Kết thúc tải (dù thành công hay thất bại)
         }
     };
 
@@ -98,21 +103,14 @@ export default function App() {
         navigate('/login');
     };
 
-    // --- LOGIC GIỎ HÀNG (ĐÃ CẬP NHẬT) ---
-
-    // 1. Thêm vào giỏ hàng (Kèm Stock)
+    // --- LOGIC GIỎ HÀNG ---
     const addToCart = (product) => {
         setCart(prevCart => {
             const existing = prevCart.find(c => c.id === product.id);
-
             if (existing) {
-                // Kiểm tra: Nếu số lượng hiện tại >= stock thì không thêm nữa
-                if (existing.quantity >= product.stock) {
-                    return prevCart;
-                }
+                if (existing.quantity >= product.stock) return prevCart;
                 return prevCart.map(c => c.id === product.id ? { ...c, quantity: c.quantity + 1 } : c);
             } else {
-                // QUAN TRỌNG: Spread {...product} để copy cả STOCK vào giỏ hàng
                 return [...prevCart, { ...product, quantity: 1 }];
             }
         });
@@ -122,24 +120,16 @@ export default function App() {
         setCart(cart.filter(c => c.id !== id));
     };
 
-    // 2. Cập nhật số lượng (Kèm Check Stock)
     const updateCartQty = (id, qty) => {
         if (qty <= 0) {
             removeFromCart(id);
             return;
         }
-
         const itemInCart = cart.find(c => c.id === id);
-
-        // Nếu số lượng mới lớn hơn stock -> Chặn luôn (bảo vệ 2 lớp)
-        if (itemInCart && qty > itemInCart.stock) {
-            return;
-        }
-
+        if (itemInCart && qty > itemInCart.stock) return;
         setCart(cart.map(c => c.id === id ? { ...c, quantity: qty } : c));
     };
 
-    // --- LOGIC THANH TOÁN ---
     const startCheckout = () => {
         if (cart.length === 0) {
             alert("Your cart is empty!");
@@ -156,7 +146,6 @@ export default function App() {
     const handlePaymentSuccess = async (customerInfo) => {
         try {
             const totalMoney = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
             await api.post('/orders', {
                 full_name: customerInfo.name,
                 phone: customerInfo.phone,
@@ -165,46 +154,52 @@ export default function App() {
                 items: cart,
                 total_money: totalMoney
             });
-
             alert(`Order placed successfully!`);
             setCart([]);
             setOrders([]);
             navigate('/my-orders');
-
         } catch (error) {
             console.error("Payment error:", error);
             alert("Failed to place order.");
         }
     };
 
-    // --- ADMIN HELPERS (Giữ nguyên) ---
-    // ... (Phần logic admin category/provider cũ của bạn vẫn giữ nguyên ở đây) ...
+    // --- CHECK AUTH PAGE ---
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
     // --- RENDER ---
     return (
-        <div className="min-h-screen bg-gray-50">
-            <Header cartCount={cart.length} user={user} onLogout={handleLogout} />
+        <div className="min-h-screen bg-gray-50 flex flex-col">
 
-            <main className="container mx-auto p-6">
+            {/* 3. ẨN HEADER Ở TRANG LOGIN/SIGNUP ĐỂ FULL MÀN HÌNH */}
+            {!isAuthPage && (
+                <Header cartCount={cart.length} user={user} onLogout={handleLogout} />
+            )}
+
+            <main className={isAuthPage ? "w-full min-h-screen p-0" : "container mx-auto p-6 flex-grow"}>
                 <Routes>
-                    {/* --- SỬA Ở ĐÂY: cart={cart} thay vì cart={cartItems} --- */}
+                    {/* --- Shop & Product --- */}
                     <Route
                         path="/"
                         element={
                             <ShopView
                                 equipment={equipment}
                                 categories={categories}
-                                cart={cart}  // Truyền state cart vào đây
+                                cart={cart}
                                 onAddToCart={addToCart}
+                                // 4. TRUYỀN PROPS MỚI CHO SHOPVIEW
+                                isLoading={loading}      // Trạng thái đang tải
+                                onRefresh={fetchData}    // Hàm để ShopView tự gọi lại khi cần
                             />
                         }
                     />
-
                     <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} cart={cart} />} />
 
+                    {/* --- Auth (Login / Signup) --- */}
                     <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
                     <Route path="/signup" element={<Signup />} />
 
+                    {/* --- Cart & Checkout --- */}
                     <Route
                         path="/cart"
                         element={
@@ -217,7 +212,6 @@ export default function App() {
                             />
                         }
                     />
-
                     <Route
                         path="/checkout"
                         element={
@@ -229,6 +223,7 @@ export default function App() {
                         }
                     />
 
+                    {/* --- User Routes --- */}
                     {user ? (
                         <>
                             <Route path="/profile" element={<UserProfile user={user} />} />
@@ -238,6 +233,7 @@ export default function App() {
                         <Route path="/profile" element={<div className="text-center mt-10">Please Login first</div>} />
                     )}
 
+                    {/* --- Admin Routes --- */}
                     {user?.role === 'admin' ? (
                         <>
                             <Route path="admin/categories" element={<CategoryManager />} />
