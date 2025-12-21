@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import UserList from './UserList';
-import UserDetailModal from './UserDetailModal'; // MỚI: Import Modal
+import UserDetailModal from './UserDetailModal';
 import api from '../../api';
 
 export default function UserManager() {
@@ -10,17 +10,20 @@ export default function UserManager() {
     // State cho thanh tìm kiếm
     const [searchTerm, setSearchTerm] = useState('');
 
-    // MỚI: State cho modal chi tiết
+    // State cho modal chi tiết
     const [selectedUser, setSelectedUser] = useState(null);
 
     useEffect(() => {
-        fetchData();
+        fetchData(); // Load lần đầu (lấy tất cả)
     }, []);
 
-    const fetchData = async () => {
+    // --- SỬA: Nhận keyword để gọi API tìm kiếm ---
+    const fetchData = async (keyword = '') => {
         try {
             setLoading(true);
-            const res = await api.get('/users');
+            // Nếu có keyword thì thêm param ?search=..., nếu không thì gọi api gốc
+            const url = keyword ? `/users?search=${keyword}` : '/users';
+            const res = await api.get(url);
             setUsers(res.data);
         } catch (error) {
             console.error("Error loading users:", error);
@@ -29,20 +32,28 @@ export default function UserManager() {
         }
     };
 
+    // --- MỚI: Hàm xử lý khi bấm Enter ---
+    const handleSearchSubmit = () => {
+        fetchData(searchTerm);
+    };
+
     // === DELETE ONLY ===
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure? This action cannot be undone.")) return;
         try {
             await api.delete(`/users/${id}`);
             alert("User deleted successfully!");
+
             // Nếu user đang mở modal bị xóa thì đóng modal
             if (selectedUser && selectedUser.id === id) {
                 setSelectedUser(null);
             }
-            fetchData();
+            // Load lại danh sách với từ khóa tìm kiếm hiện tại
+            fetchData(searchTerm);
         } catch (error) {
             console.error("Delete error:", error);
-            alert("Failed to delete user.");
+            const msg = error.response?.data?.message || "Failed to delete user.";
+            alert(msg);
         }
     };
 
@@ -55,25 +66,27 @@ export default function UserManager() {
         setSelectedUser(null);
     };
 
-    // === SEARCH LOGIC ===
-    const filteredUsers = users.filter(user =>
-        (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // --- BỎ: const filteredUsers = ... (Không lọc ở client nữa) ---
 
     if (loading) return <div className="p-10 text-center">Loading users...</div>;
 
     return (
         <div className="container mx-auto p-6 relative">
             <UserList
-                users={filteredUsers}
+                // Truyền trực tiếp danh sách users (đã được API lọc)
+                users={users}
+
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+
+                // MỚI: Truyền hàm submit xuống dưới
+                onSearchSubmit={handleSearchSubmit}
+
                 onDelete={handleDelete}
-                onView={handleViewDetail} // MỚI: Truyền hàm view xuống
+                onView={handleViewDetail}
             />
 
-            {/* MỚI: Render Modal nếu có selectedUser */}
+            {/* Modal */}
             {selectedUser && (
                 <UserDetailModal
                     user={selectedUser}

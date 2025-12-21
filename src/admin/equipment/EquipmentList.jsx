@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react'; // MỚI: Import Search
+import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import EquipmentForm from './EquipmentForm';
 
 export default function EquipmentList({
@@ -13,9 +13,9 @@ export default function EquipmentList({
                                           onSave,
                                           onShowForm,
                                           onCancelForm,
-                                          // MỚI: Nhận props tìm kiếm
                                           searchTerm,
-                                          onSearchChange
+                                          onSearchChange,
+                                          onSearchSubmit // MỚI: Nhận props hàm submit
                                       }) {
     return (
         <div>
@@ -29,16 +29,22 @@ export default function EquipmentList({
                 </button>
             </div>
 
-            {/* --- MỚI: THANH TÌM KIẾM --- */}
+            {/* --- THANH TÌM KIẾM --- */}
             <div className="mb-6 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                     type="text"
-                    placeholder="Search equipment by name or description..."
+                    placeholder="Search equipment by name/desc and press Enter..."
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
+                    // MỚI: Bắt sự kiện phím Enter
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            onSearchSubmit();
+                        }
+                    }}
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
             </div>
@@ -68,12 +74,21 @@ export default function EquipmentList({
                     <tbody>
                     {equipment.length > 0 ? (
                         equipment.map(equip => {
+                            // Xử lý fallback key nếu backend trả về snake_case hoặc camelCase
                             const catId = equip.category_id || equip.categoryId;
                             const provId = equip.provider_id || equip.providerId;
 
                             return (
                                 <tr key={equip.id} className="border-t hover:bg-gray-50">
-                                    <td className="p-4 font-medium">{equip.name}</td>
+                                    <td className="p-4 font-medium">
+                                        {equip.name}
+                                        {/* Hiển thị một phần mô tả nếu có */}
+                                        {equip.description && (
+                                            <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                {equip.description}
+                                            </p>
+                                        )}
+                                    </td>
                                     <td className="p-4 text-green-600 font-bold">${equip.price}</td>
                                     <td className="p-4">
                                         {categories.find(c => c.id === catId)?.name || '---'}
@@ -102,7 +117,6 @@ export default function EquipmentList({
                             );
                         })
                     ) : (
-                        // MỚI: Hiển thị khi không tìm thấy kết quả
                         <tr>
                             <td colSpan="6" className="p-8 text-center text-gray-500">
                                 No product found matching "{searchTerm}"

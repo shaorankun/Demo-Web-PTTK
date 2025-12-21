@@ -5,9 +5,7 @@ import api from '../../api';
 export default function CategoryManager() {
     // 1. Data State
     const [categories, setCategories] = useState([]);
-
-    // --- MỚI: State cho tìm kiếm ---
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(''); // State lưu từ khóa
 
     // 2. UI State
     const [loading, setLoading] = useState(true);
@@ -16,13 +14,16 @@ export default function CategoryManager() {
 
     // 3. Fetch Data on Mount
     useEffect(() => {
-        fetchData();
+        fetchData(); // Gọi lần đầu không tham số (lấy tất cả)
     }, []);
 
-    const fetchData = async () => {
+    // --- SỬA: fetchData nhận tham số keyword ---
+    const fetchData = async (keyword = '') => {
         try {
             setLoading(true);
-            const res = await api.get('/categories');
+            // Nếu có keyword thì thêm param ?search=..., nếu không thì gọi api gốc
+            const url = keyword ? `/categories?search=${keyword}` : '/categories';
+            const res = await api.get(url);
             setCategories(res.data);
         } catch (error) {
             console.error("Error loading categories:", error);
@@ -31,22 +32,25 @@ export default function CategoryManager() {
         }
     };
 
-// === SAVE HANDLER ===
+    // --- MỚI: Hàm xử lý khi bấm Enter ---
+    const handleSearchSubmit = () => {
+        fetchData(searchTerm);
+    };
+
+    // === SAVE HANDLER ===
     const handleSave = async (formData) => {
-        // 1. KIỂM TRA TRÙNG TÊN (Logic mới thêm vào)
+        // Lưu ý: Logic check duplicate client-side này chỉ hiệu quả với những item ĐANG hiển thị.
+        // Backend vẫn là chốt chặn cuối cùng.
         const isDuplicate = categories.some(cat =>
-            // So sánh tên (bỏ khoảng trắng thừa + không phân biệt hoa thường)
             cat.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
-            // Nếu đang sửa (có id), đảm bảo không so sánh với chính nó
             cat.id !== formData.id
         );
 
         if (isDuplicate) {
             alert("Category name existed! Please choose another name");
-            return; // Dừng hàm ngay lập tức, không gọi API
+            return;
         }
 
-        // 2. GỌI API (Logic cũ của bạn)
         try {
             if (formData.id) {
                 await api.put(`/categories/${formData.id}`, formData);
@@ -55,7 +59,8 @@ export default function CategoryManager() {
                 await api.post('/categories', formData);
                 alert('Category created successfully!');
             }
-            fetchData();
+            // Load lại dữ liệu theo từ khóa tìm kiếm hiện tại (hoặc '' để lấy tất cả)
+            fetchData(searchTerm);
             handleCancelForm();
         } catch (error) {
             console.error("Save error:", error);
@@ -70,7 +75,7 @@ export default function CategoryManager() {
         try {
             await api.delete(`/categories/${id}`);
             alert("Deleted successfully!");
-            fetchData();
+            fetchData(searchTerm); // Load lại danh sách sau khi xóa
         } catch (error) {
             console.error("Delete error:", error);
             alert("Failed to delete category.");
@@ -78,26 +83,11 @@ export default function CategoryManager() {
     };
 
     // UI Helpers
-    const handleShowAddForm = () => {
-        setEditItem(null);
-        setShowForm(true);
-    };
+    const handleShowAddForm = () => { setEditItem(null); setShowForm(true); };
+    const handleEdit = (item) => { setEditItem(item); setShowForm(true); };
+    const handleCancelForm = () => { setShowForm(false); setEditItem(null); };
 
-    const handleEdit = (item) => {
-        setEditItem(item);
-        setShowForm(true);
-    };
-
-    const handleCancelForm = () => {
-        setShowForm(false);
-        setEditItem(null);
-    };
-
-    // --- MỚI: Logic lọc danh sách ---
-    const filteredCategories = categories.filter(cat =>
-        cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // --- BỎ: const filteredCategories = ... (Không lọc ở client nữa) ---
 
     if (loading) return <div className="p-10 text-center text-gray-500">Loading categories...</div>;
 
@@ -106,12 +96,14 @@ export default function CategoryManager() {
             <h1 className="text-3xl font-bold mb-6 text-gray-800">Category Management</h1>
 
             <CategoryList
-                // Truyền danh sách đã lọc
-                categories={filteredCategories}
+                // Truyền trực tiếp categories (vì API đã trả về kết quả lọc rồi)
+                categories={categories}
 
-                // Truyền props tìm kiếm
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+
+                // MỚI: Truyền hàm xử lý Enter xuống dưới
+                onSearchSubmit={handleSearchSubmit}
 
                 showForm={showForm}
                 editItem={editItem}

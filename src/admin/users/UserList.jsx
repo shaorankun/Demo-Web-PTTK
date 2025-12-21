@@ -1,12 +1,13 @@
 import React from 'react';
-import { Trash2, Search, Eye } from 'lucide-react'; // MỚI: Import Eye
+import { Trash2, Search, Eye } from 'lucide-react';
 
 export default function UserList({
                                      users,
                                      searchTerm,
                                      onSearchChange,
                                      onDelete,
-                                     onView // MỚI: Nhận prop xem chi tiết
+                                     onView,
+                                     onSearchSubmit // MỚI: Nhận prop hàm submit
                                  }) {
     return (
         <div>
@@ -21,9 +22,16 @@ export default function UserList({
                 </div>
                 <input
                     type="text"
-                    placeholder="Search by name or email..."
+                    // Cập nhật placeholder hướng dẫn người dùng
+                    placeholder="Search by name/email and press Enter..."
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
+                    // MỚI: Bắt sự kiện phím bấm
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            onSearchSubmit(); // Gọi hàm tìm kiếm khi bấm Enter
+                        }
+                    }}
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
             </div>
@@ -54,7 +62,6 @@ export default function UserList({
                                         </span>
                                 </td>
                                 <td className="p-4 flex gap-2">
-                                    {/* MỚI: Nút xem chi tiết */}
                                     <button
                                         onClick={() => onView(u)}
                                         className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"

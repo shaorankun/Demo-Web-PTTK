@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import EquipmentList from './EquipmentList';
-import api from '../../api'; // Đường dẫn api tùy vào cấu trúc folder của bạn
+import api from '../../api';
 
 export default function EquipmentManager() {
     // 1. Data State
@@ -8,7 +8,7 @@ export default function EquipmentManager() {
     const [categories, setCategories] = useState([]);
     const [providers, setProviders] = useState([]);
 
-    // --- MỚI: State tìm kiếm ---
+    // State tìm kiếm
     const [searchTerm, setSearchTerm] = useState('');
 
     // 2. UI State
@@ -18,14 +18,19 @@ export default function EquipmentManager() {
 
     // 3. Fetch Data on Mount
     useEffect(() => {
-        fetchData();
+        fetchData(); // Load all lần đầu
     }, []);
 
-    const fetchData = async () => {
+    // --- SỬA: Nhận keyword để gọi API ---
+    const fetchData = async (keyword = '') => {
         try {
             setLoading(true);
+
+            // Xây dựng URL cho equipment (có search)
+            const equipUrl = keyword ? `/equipments?search=${keyword}` : '/equipments';
+
             const [equipRes, catRes, provRes] = await Promise.all([
-                api.get('/equipments'),
+                api.get(equipUrl),
                 api.get('/categories'),
                 api.get('/providers')
             ]);
@@ -38,6 +43,8 @@ export default function EquipmentManager() {
             }));
 
             setEquipments(formattedEquip);
+
+            // Chỉ set categories/providers nếu chưa có (để tối ưu, hoặc cứ set lại cũng ko sao)
             setCategories(catRes.data);
             setProviders(provRes.data);
         } catch (error) {
@@ -47,22 +54,24 @@ export default function EquipmentManager() {
         }
     };
 
-    // === SAVE HANDLER (Đã thêm check trùng tên) ===
+    // --- MỚI: Hàm xử lý khi bấm Enter ---
+    const handleSearchSubmit = () => {
+        fetchData(searchTerm);
+    };
+
+    // === SAVE HANDLER ===
     const handleSave = async (formData) => {
-        // 1. KIỂM TRA TRÙNG TÊN
+        // Check duplicate ở client (Chỉ check được trên danh sách đang hiển thị)
         const isDuplicate = equipments.some(item =>
-            // So sánh tên (bỏ khoảng trắng + chữ thường)
             item.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
-            // Nếu đang update thì bỏ qua chính nó
             item.id !== formData.id
         );
 
         if (isDuplicate) {
             alert("Product existed! Please choose another name");
-            return; // Dừng, không gọi API
+            return;
         }
 
-        // 2. GỌI API (Logic cũ)
         try {
             if (formData.id) {
                 await api.put(`/equipments/${formData.id}`, formData);
@@ -71,11 +80,11 @@ export default function EquipmentManager() {
                 await api.post('/equipments', formData);
                 alert('Created successfully!');
             }
-            fetchData();
+            // Load lại data với từ khóa tìm kiếm hiện tại
+            fetchData(searchTerm);
             handleCancelForm();
         } catch (error) {
             console.error("Save error:", error);
-            // Nếu Backend trả về lỗi trùng, hiển thị ra luôn
             const message = error.response?.data?.message || error.message;
             alert(`Operation failed: ${message}`);
         }
@@ -87,7 +96,8 @@ export default function EquipmentManager() {
         try {
             await api.delete(`/equipments/${id}`);
             alert("Deleted successfully!");
-            fetchData();
+            // Load lại data với từ khóa tìm kiếm hiện tại
+            fetchData(searchTerm);
         } catch (error) {
             console.error("Delete error:", error);
             alert("Failed to delete item.");
@@ -99,11 +109,7 @@ export default function EquipmentManager() {
     const handleEdit = (item) => { setEditItem(item); setShowForm(true); };
     const handleCancelForm = () => { setShowForm(false); setEditItem(null); };
 
-    // --- MỚI: Logic lọc danh sách theo tên hoặc mô tả ---
-    const filteredEquipments = equipments.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // --- BỎ logic lọc filteredEquipments ở đây ---
 
     if (loading) return <div className="p-10 text-center text-gray-500">Loading data...</div>;
 
@@ -112,14 +118,15 @@ export default function EquipmentManager() {
             <h1 className="text-3xl font-bold mb-6 text-gray-800">Product Management</h1>
 
             <EquipmentList
-                // Truyền danh sách đã lọc thay vì danh sách gốc
-                equipment={filteredEquipments}
+                // Truyền trực tiếp equipments (vì API đã lọc rồi)
+                equipment={equipments}
                 categories={categories}
                 providers={providers}
 
-                // Truyền props tìm kiếm
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+                // Truyền hàm submit xuống view
+                onSearchSubmit={handleSearchSubmit}
 
                 showForm={showForm}
                 editItem={editItem}

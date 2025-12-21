@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react'; // MỚI: Import Search
+import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import CategoryForm from './CategoryForm';
 
 export default function CategoryList({
@@ -11,9 +11,9 @@ export default function CategoryList({
                                          onSave,
                                          onShowForm,
                                          onCancelForm,
-                                         // MỚI: Nhận props tìm kiếm
                                          searchTerm,
-                                         onSearchChange
+                                         onSearchChange,
+                                         onSearchSubmit // MỚI: Nhận prop hàm submit
                                      }) {
     return (
         <div>
@@ -27,16 +27,22 @@ export default function CategoryList({
                 </button>
             </div>
 
-            {/* --- MỚI: THANH TÌM KIẾM --- */}
+            {/* --- THANH TÌM KIẾM --- */}
             <div className="mb-6 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                     type="text"
-                    placeholder="Search categories..."
+                    placeholder="Search categories and press Enter..."
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
+                    // MỚI: Bắt sự kiện phím bấm
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            onSearchSubmit(); // Gọi hàm tìm kiếm khi bấm Enter
+                        }
+                    }}
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
             </div>
@@ -83,7 +89,6 @@ export default function CategoryList({
                             </tr>
                         ))
                     ) : (
-                        // MỚI: Hiển thị khi không tìm thấy kết quả
                         <tr>
                             <td colSpan="3" className="p-8 text-center text-gray-500">
                                 No categories found matching "{searchTerm}"
