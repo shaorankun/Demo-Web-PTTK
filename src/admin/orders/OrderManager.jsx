@@ -49,6 +49,7 @@ export default function OrderManager() {
             setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
 
             await api.put(`/orders/${id}`, { status: newStatus });
+            alert("Update order status successfully");
         } catch (error) {
             alert("Update failed");
             fetchOrders(); // Revert lại nếu lỗi
