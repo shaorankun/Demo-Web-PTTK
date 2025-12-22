@@ -180,7 +180,7 @@ export default function CheckoutForm({ cart, onConfirm, onCancel }) {
                             <p className="font-bold">Bank Info:</p>
                             <p>Bank: Vietcombank</p>
                             <p>Account: 999988887777</p>
-                            <p>Name: BO MAY</p>
+                            <p>Name: Trunginator</p>
                             <p className="mt-1 text-xs text-gray-500">Please include your phone number in the transfer content.</p>
                         </div>
                     )}
