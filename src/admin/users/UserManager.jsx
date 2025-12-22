@@ -14,14 +14,16 @@ export default function UserManager() {
     const [selectedUser, setSelectedUser] = useState(null);
 
     useEffect(() => {
-        fetchData(); // Load lần đầu (lấy tất cả)
+        fetchData();
     }, []);
 
-    // --- SỬA: Nhận keyword để gọi API tìm kiếm ---
+    // Nhận keyword để gọi API tìm kiếm
     const fetchData = async (keyword = '') => {
         try {
-            setLoading(true);
-            // Nếu có keyword thì thêm param ?search=..., nếu không thì gọi api gốc
+            // Không set loading = true ở đây để tránh nháy màn hình khi search
+            // Chỉ set loading lần đầu tiên hoặc nếu bạn muốn hiệu ứng loading mỗi khi search
+            if (users.length === 0) setLoading(true);
+
             const url = keyword ? `/users?search=${keyword}` : '/users';
             const res = await api.get(url);
             setUsers(res.data);
@@ -32,14 +34,30 @@ export default function UserManager() {
         }
     };
 
-    // --- MỚI: Hàm xử lý khi bấm Enter ---
     const handleSearchSubmit = () => {
         fetchData(searchTerm);
     };
 
-    // === DELETE ONLY ===
+    // === DELETE USER (CÓ LOGIC BẢO VỆ ADMIN) ===
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure? This action cannot be undone.")) return;
+        // 1. Tìm user đang định xóa
+        const userToDelete = users.find(u => u.id === id);
+
+        // 2. KIỂM TRA: Nếu user đó là Admin
+        if (userToDelete && userToDelete.role === 'admin') {
+            // Đếm số lượng admin hiện có
+            const adminCount = users.filter(u => u.role === 'admin').length;
+
+            // Nếu chỉ còn 1 admin (là chính người này) -> CHẶN
+            if (adminCount <= 1) {
+                alert("ACTION DENIED: You cannot delete the only remaining Administrator in the system.");
+                return; // Dừng lại ngay
+            }
+        }
+
+        // 3. Nếu không phải Admin cuối cùng -> Hỏi xác nhận xóa
+        if (!window.confirm(`Are you sure you want to delete user "${userToDelete?.full_name || 'this user'}"? This action cannot be undone.`)) return;
+
         try {
             await api.delete(`/users/${id}`);
             alert("User deleted successfully!");
@@ -48,12 +66,16 @@ export default function UserManager() {
             if (selectedUser && selectedUser.id === id) {
                 setSelectedUser(null);
             }
-            // Load lại danh sách với từ khóa tìm kiếm hiện tại
-            fetchData(searchTerm);
+
+            // Cập nhật UI ngay lập tức (Optimistic update) cho mượt
+            setUsers(prevUsers => prevUsers.filter(u => u.id !== id));
+
         } catch (error) {
             console.error("Delete error:", error);
             const msg = error.response?.data?.message || "Failed to delete user.";
             alert(msg);
+            // Nếu lỗi đồng bộ data, load lại từ server
+            fetchData(searchTerm);
         }
     };
 
@@ -66,22 +88,21 @@ export default function UserManager() {
         setSelectedUser(null);
     };
 
-    // --- BỎ: const filteredUsers = ... (Không lọc ở client nữa) ---
-
-    if (loading) return <div className="p-10 text-center">Loading users...</div>;
+    if (loading) return (
+        <div className="flex justify-center items-center h-screen text-gray-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-2"></div>
+            Loading users...
+        </div>
+    );
 
     return (
-        <div className="container mx-auto p-6 relative">
+        // Thêm animate-fade-in và background
+        <div className="w-full min-h-screen p-6 bg-gray-50 animate-fade-in">
             <UserList
-                // Truyền trực tiếp danh sách users (đã được API lọc)
                 users={users}
-
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-
-                // MỚI: Truyền hàm submit xuống dưới
                 onSearchSubmit={handleSearchSubmit}
-
                 onDelete={handleDelete}
                 onView={handleViewDetail}
             />

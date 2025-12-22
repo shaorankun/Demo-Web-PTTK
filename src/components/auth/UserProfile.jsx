@@ -54,7 +54,7 @@ export default function UserProfile() {
         }
     };
 
-    // --- LOGIC HANDLE CHANGE (CÓ CHECK SỐ ĐIỆN THOẠI) ---
+    // --- LOGIC HANDLE CHANGE ---
     const handleMainChange = (e) => {
         const { name, value } = e.target;
         if (name === 'phone') {
@@ -79,16 +79,20 @@ export default function UserProfile() {
 
     const handleDeleteAccount = async () => {
         const confirmDelete = window.confirm(
-            "WARNING: Are you sure you want to delete your account?\n\nThis action cannot be undone."
+            "WARNING: Are you sure you want to delete your account?\n\nThis action cannot be undone. All your data will be permanently removed."
         );
+
         if (confirmDelete) {
             try {
                 await api.delete('/users/profile');
                 localStorage.removeItem('token');
+                localStorage.removeItem('role');
                 alert("Your account has been deleted.");
                 window.location.href = '/login';
             } catch (error) {
-                alert("Failed to delete account.");
+                console.error("Delete Account Error:", error);
+                const errorMsg = error.response?.data?.message || "Failed to delete account.";
+                alert(`ERROR: ${errorMsg}`);
             }
         }
     };
@@ -104,15 +108,42 @@ export default function UserProfile() {
         setNewProfile({ ...newProfile, [name]: value });
     };
 
+    // --- [QUAN TRỌNG] ĐÃ SỬA: CHECK TRÙNG LẶP (3 FIELDS) ---
     const handleAddProfile = async (e) => {
         e.preventDefault();
+
+        // 1. Logic kiểm tra trùng lặp Client-side
+        // Duyệt qua mảng profiles hiện có
+        const isDuplicate = profiles.some(profile => {
+            // Chuẩn hóa chuỗi (bỏ khoảng trắng thừa, chuyển về chữ thường) để so sánh
+            const existingName = profile.full_name.trim().toLowerCase();
+            const newName = newProfile.full_name.trim().toLowerCase();
+
+            const existingPhone = profile.phone.trim();
+            const newPhone = newProfile.phone.trim();
+
+            const existingAddr = profile.address.trim().toLowerCase();
+            const newAddr = newProfile.address.trim().toLowerCase();
+
+            // Chỉ tính là trùng nếu CẢ 3 trường đều giống nhau
+            return existingName === newName && existingPhone === newPhone && existingAddr === newAddr;
+        });
+
+        if (isDuplicate) {
+            alert("⚠️ Duplicate Address! You already have a shipping profile with this Name, Phone, and Address.");
+            return; // Dừng lại, không gọi API
+        }
+
+        // 2. Nếu không trùng thì gọi API
         try {
             await api.post('/profiles', newProfile);
             await fetchShippingProfiles();
             setNewProfile({ title: '', full_name: '', phone: '', address: '' });
             alert("New address added successfully!");
         } catch (error) {
-            alert("Failed to add address.");
+            // Nếu Backend trả về lỗi trùng lặp (nếu frontend bị bypass)
+            const errorMsg = error.response?.data?.message || "Failed to add address.";
+            alert(errorMsg);
         }
     };
 
@@ -121,8 +152,11 @@ export default function UserProfile() {
         try {
             await api.delete(`/profiles/${id}`);
             setProfiles(profiles.filter(p => p.id !== id));
+            alert("Address deleted successfully.");
         } catch (error) {
-            alert("Failed to delete address.");
+            console.error(error);
+            const errorMsg = error.response?.data?.message || "Failed to delete address.";
+            alert(`⛔ ERROR: ${errorMsg}`);
         }
     };
 
@@ -136,20 +170,17 @@ export default function UserProfile() {
         <div className="min-h-screen bg-gray-50 py-10 px-4 animate-fade-in">
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                {/* --- CỘT TRÁI: PROFILE CARD (Chiếm 4/12 cột) --- */}
+                {/* --- CỘT TRÁI: PROFILE CARD --- */}
                 <div className="lg:col-span-4 space-y-6">
 
                     {/* CARD THÔNG TIN CHÍNH */}
                     <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
-                        {/* Header Background */}
                         <div className="h-32 bg-gradient-to-r from-blue-600 to-blue-400"></div>
 
-                        {/* Avatar (Giả lập) */}
                         <div className="absolute top-20 left-1/2 transform -translate-x-1/2">
                             <div className="w-24 h-24 bg-white rounded-full p-1 shadow-lg">
                                 <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-400 relative overflow-hidden group">
                                     <User size={40} />
-                                    {/* Hover effect upload ảnh (UI only) */}
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
                                         <Camera size={20} className="text-white" />
                                     </div>
@@ -161,7 +192,6 @@ export default function UserProfile() {
                             <h2 className="text-center text-2xl font-bold text-gray-800">{formData.full_name || 'User Name'}</h2>
                             <p className="text-center text-blue-600 text-sm font-medium mb-6">{formData.email}</p>
 
-                            {/* Thông báo cập nhật */}
                             {message.text && (
                                 <div className={`p-3 mb-6 rounded-lg text-sm flex items-center gap-2 ${
                                     message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
@@ -172,7 +202,6 @@ export default function UserProfile() {
                             )}
 
                             <form onSubmit={handleUpdateMain} className="space-y-5">
-                                {/* Input Group: Full Name */}
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Full Name</label>
                                     <div className="relative mt-1">
@@ -188,7 +217,6 @@ export default function UserProfile() {
                                     </div>
                                 </div>
 
-                                {/* Input Group: Email (Disabled) */}
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Email</label>
                                     <div className="relative mt-1">
@@ -202,7 +230,6 @@ export default function UserProfile() {
                                     </div>
                                 </div>
 
-                                {/* Input Group: Phone */}
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Phone Number</label>
                                     <div className="relative mt-1">
@@ -218,7 +245,6 @@ export default function UserProfile() {
                                     </div>
                                 </div>
 
-                                {/* Input Group: Address */}
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Main Address</label>
                                     <div className="relative mt-1">
@@ -257,10 +283,10 @@ export default function UserProfile() {
                     </div>
                 </div>
 
-                {/* --- CỘT PHẢI: ADDRESS BOOK (Chiếm 8/12 cột) --- */}
+                {/* --- CỘT PHẢI: ADDRESS BOOK --- */}
                 <div className="lg:col-span-8 space-y-8">
 
-                    {/* FORM THÊM ĐỊA CHỈ MỚI */}
+                    {/* FORM THÊM ĐỊA CHỈ */}
                     <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
                         <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
@@ -328,7 +354,7 @@ export default function UserProfile() {
                         </form>
                     </div>
 
-                    {/* DANH SÁCH ĐỊA CHỈ (GRID) */}
+                    {/* DANH SÁCH ĐỊA CHỈ */}
                     <div>
                         <h3 className="text-xl font-bold mb-4 text-gray-700 flex items-center gap-2">
                             <MapPin className="text-blue-500" /> Saved Addresses ({profiles.length})

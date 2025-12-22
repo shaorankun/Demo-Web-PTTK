@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
-import { Trash2, Eye, Search, Banknote, CreditCard } from 'lucide-react';
+import { Trash2, Eye, Search, Banknote, CreditCard, AlertTriangle } from 'lucide-react';
 
 export default function OrderManager() {
     const [orders, setOrders] = useState([]);
@@ -33,15 +33,24 @@ export default function OrderManager() {
         }
     };
 
+    // --- [QUAN TRỌNG] ĐÃ CẬP NHẬT LOGIC CHẶN CẬP NHẬT NẾU CANCELLED ---
     const handleStatusChange = async (id, newStatus) => {
+        // 1. Tìm đơn hàng hiện tại trong state để kiểm tra status cũ
+        const currentOrder = orders.find(o => o.id === id);
+
+        // 2. CHECK LOGIC: Nếu status hiện tại là 'Cancelled' -> CHẶN
+        if (currentOrder && currentOrder.status === 'Cancelled') {
+            alert("ACTION DENIED: This order is already Cancelled and cannot be updated.");
+            return; // Dừng hàm ngay lập tức, không gọi API, không đổi State
+        }
+
         try {
             // Optimistic update: Cập nhật UI ngay lập tức cho mượt
             setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
 
             await api.put(`/orders/${id}`, { status: newStatus });
-            // Không cần alert mỗi lần đổi để trải nghiệm mượt hơn, hoặc dùng toast
         } catch (error) {
-            alert("Lỗi cập nhật");
+            alert("Update failed");
             fetchOrders(); // Revert lại nếu lỗi
         }
     };
@@ -57,14 +66,13 @@ export default function OrderManager() {
         );
     });
 
-    // Helper để lấy màu cho Status Badge
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Pending': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
             case 'Processing': return 'text-blue-700 bg-blue-50 border-blue-200';
             case 'Shipped': return 'text-indigo-700 bg-indigo-50 border-indigo-200';
             case 'Delivered': return 'text-green-700 bg-green-50 border-green-200';
-            case 'Cancelled': return 'text-red-700 bg-red-50 border-red-200';
+            case 'Cancelled': return 'text-red-700 bg-red-50 border-red-200'; // Màu đỏ cho Cancelled
             default: return 'text-gray-700 bg-gray-50 border-gray-200';
         }
     };
@@ -120,23 +128,19 @@ export default function OrderManager() {
                             filteredOrders.map(order => (
                                 <tr key={order.id} className="hover:bg-blue-50 transition-colors duration-200 group">
 
-                                    {/* ID */}
                                     <td className="p-4 font-mono text-sm text-gray-500 font-semibold">
                                         #{order.id}
                                     </td>
 
-                                    {/* Customer Info */}
                                     <td className="p-4">
                                         <div className="font-bold text-gray-800">{order.full_name}</div>
                                         <div className="text-xs text-gray-500 mt-0.5">{order.phone}</div>
                                     </td>
 
-                                    {/* Total Money */}
                                     <td className="p-4 font-bold text-gray-800">
                                         ${new Intl.NumberFormat('en-US').format(order.total_money)}
                                     </td>
 
-                                    {/* Payment Method */}
                                     <td className="p-4">
                                         {order.payment_method === 'BANK' ? (
                                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
@@ -149,13 +153,14 @@ export default function OrderManager() {
                                         )}
                                     </td>
 
-                                    {/* Status Dropdown (Styled) */}
+                                    {/* STATUS COLUMN */}
                                     <td className="p-4">
                                         <div className="relative">
                                             <select
                                                 value={order.status}
                                                 onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                                                className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-bold border cursor-pointer focus:ring-2 focus:ring-offset-1 focus:outline-none transition-all ${getStatusStyle(order.status)}`}
+                                                // Thêm style opacity-50 nếu là Cancelled để user biết nó bị khóa (visual hint)
+                                                className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-bold border cursor-pointer focus:ring-2 focus:ring-offset-1 focus:outline-none transition-all ${getStatusStyle(order.status)} ${order.status === 'Cancelled' ? 'opacity-80 cursor-not-allowed' : ''}`}
                                             >
                                                 <option value="Pending">Pending</option>
                                                 <option value="Processing">Processing</option>
@@ -163,25 +168,20 @@ export default function OrderManager() {
                                                 <option value="Delivered">Delivered</option>
                                                 <option value="Cancelled">Cancelled</option>
                                             </select>
-                                            {/* Custom Arrow Icon */}
+
+                                            {/* Icon mũi tên */}
                                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                                             </div>
                                         </div>
                                     </td>
 
-                                    {/* Date */}
                                     <td className="p-4 text-sm text-gray-500">
                                         {new Date(order.created_at).toLocaleDateString()}
-                                        <div className="text-xs text-gray-400">
-                                            {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                        </div>
                                     </td>
 
-                                    {/* Actions */}
                                     <td className="p-4">
                                         <div className="flex justify-end gap-2">
-                                            {/* View Detail Button (Placeholder for future Modal) */}
                                             <button
                                                 onClick={() => alert(`View details for order #${order.id} coming soon!`)}
                                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded-full transition-all"
