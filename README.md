@@ -1,16 +1,124 @@
-# React + Vite
+# ElectroShop — E-Commerce API Backend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A RESTful backend API for an electronics e-commerce platform. Built with **Node.js + Express**, backed by **MySQL**, and deployed on **Render**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+### Authentication
+- Credential-based signup/login with bcrypt password hashing
+- JWT-based authentication with role support (`admin` / `user`)
+- Protected routes via JWT middleware
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+### Products (Equipments)
+- Full CRUD for products with name, model, serial number, price, stock, image, and description
+- Search by name or description (case-insensitive)
+- JOIN queries to include category and provider names in responses
+- Input validation with regex (supports Vietnamese characters and hyphens)
+- Duplicate name detection and foreign key constraint handling
 
-## Expanding the ESLint configuration
+### Categories & Providers
+- CRUD for product categories
+- CRUD for product providers/suppliers
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Orders
+- Checkout with multiple items in a single transaction
+- Stock validation before order creation — rejects if any item is out of stock
+- MySQL transaction with rollback on failure (atomicity guarantee)
+- Payment method support (default: COD)
+- Order status management (admin)
+- Users can view their own order history with item details
+
+### User & Profile Management
+- Admin can view and manage all users
+- Users can update their own profile
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| Framework | Express.js v5 |
+| Database | MySQL (mysql2) |
+| Auth | JWT + bcryptjs |
+| Deployment | Render |
+
+---
+
+## Project Structure
+
+```
+├── config/
+│   └── db.js                   # MySQL connection pool
+├── controllers/
+│   ├── authController.js       # signup, login
+│   ├── equipmentController.js  # product CRUD + search
+│   ├── categoryController.js   # category CRUD
+│   ├── providerController.js   # provider CRUD
+│   ├── orderController.js      # checkout + order management
+│   ├── userController.js       # user management (admin)
+│   └── profileController.js   # user profile
+├── middleware/
+│   └── authMiddleware.js       # JWT verification + role check
+├── routes/
+│   ├── authRoutes.js
+│   ├── equipmentRoutes.js
+│   ├── categoryRoutes.js
+│   ├── providerRoutes.js
+│   ├── orderRoutes.js
+│   ├── userRoutes.js
+│   └── profileRoutes.js
+└── index.js                    # App entry point, CORS config
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js
+- MySQL
+
+### Environment Variables
+
+Create a `.env` file:
+
+```env
+PORT=3000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=electroshop
+JWT_SECRET=your_jwt_secret
+```
+
+### Run
+
+```bash
+npm install
+npm start
+```
+
+---
+
+## API Overview
+
+| Module | Base Path |
+|---|---|
+| Auth | `/api/auth` |
+| Products | `/api/equipments` |
+| Categories | `/api/categories` |
+| Providers | `/api/providers` |
+| Orders | `/api/orders` |
+| Users | `/api/users` |
+| Profile | `/api/profiles` |
+
+---
+
+## Deployment
+
+- **Backend:** [Render](https://render.com)
+- **Frontend:** [Vercel](https://vercel.com) — `https://demo-web-pttk.vercel.app`
